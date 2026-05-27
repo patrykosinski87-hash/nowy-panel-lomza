@@ -2,7 +2,14 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Łomża Roleplay</title>
+    <title>OMNI-OS | Enterprise Admin</title>
+
+    <!-- KONFIGURACJA APLIKACJI (PWA) -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,16 +34,16 @@
 <body>
 
     <aside class="sidebar">
-        <div class="brand"><i class="fa-solid fa-cube"></i> Łomża Roleplay</div>
+        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS Enterprise</div>
         <div style="margin-bottom: 30px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid var(--border-color);">
             <div style="font-size: 12px; color: var(--text-muted)">Zalogowano jako:</div>
             <div id="ui-username" style="font-weight: bold; color: white; margin-top: 3px;">...</div>
             <div id="ui-role" style="font-size: 12px; color: var(--accent-purple); font-weight: 600;">...</div>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Panel</li>
-            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze w grze</li>
-            <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery</li>
+            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
+            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze In-Game</li>
+            <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery Control</li>
             <li class="nav-item" data-target="banlist-view"><i class="fa-solid fa-gavel"></i> Lista Banów</li>
             <li class="nav-item" id="menu-staff" data-target="staff-view" style="display: none;"><i class="fa-solid fa-user-shield"></i> Zarządzanie Zespołem</li>
             <li class="nav-item" onclick="logout()"><i class="fa-solid fa-power-off" style="color: var(--danger)"></i> Wyloguj</li>
@@ -52,7 +59,7 @@
 
         <div id="players-view" class="view-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-                <h2 style="color: white;">Gracze w grze</h2>
+                <h2 style="color: white;">Gracze In-Game (Na żywo)</h2>
                 <button onclick="loadLiveData()" class="action-btn" style="background: var(--accent-blue);"><i class="fa-solid fa-rotate-right"></i> Odśwież Listę</button>
             </div>
             <div class="chart-container"><table class="data-table"><thead><tr><th>ID Robloxa</th><th>Username</th><th>Akcje</th></tr></thead><tbody id="players-table-body"></tbody></table></div>
@@ -103,12 +110,11 @@
                     <option value="Permanentny" style="color: var(--danger); font-weight: bold;">PERMANENTNY (Na zawsze)</option>
                     <option value="Custom">Inne (Wpisz ilość dni)</option>
                 </select>
-                <!-- Ukryte pole na wpisanie własnej liczby dni -->
                 <input type="number" id="modal-custom-duration" class="modal-input" placeholder="Wpisz liczbę dni, np. 14" style="display: none; margin-top: -10px;" min="1">
             </div>
             
             <label style="color: var(--text-muted); font-size: 12px;">Powód</label>
-            <input type="text" id="modal-reason" class="modal-input" placeholder="Napisz powód kary...">
+            <input type="text" id="modal-reason" class="modal-input" placeholder="Napisz powód kary..." autocomplete="off">
             
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button onclick="closePunishModal()" class="action-btn" style="background: transparent; border: 1px solid var(--border-color);">Anuluj</button>
@@ -189,7 +195,6 @@
             if (playerName) { targetInput.readOnly = true; targetInput.style.opacity = "0.5"; } 
             else { targetInput.readOnly = false; targetInput.style.opacity = "1"; }
             
-            // Resetowanie pól modala za każdym otwarciem
             document.getElementById('modal-reason').value = "";
             document.getElementById('modal-duration-type').value = "Permanentny";
             document.getElementById('modal-custom-duration').value = "";
@@ -219,7 +224,6 @@
             if(!target) return alert("Musisz podać cel (ID lub Nick)!");
             if(!reason) return alert("Podaj powód!");
 
-            // Kalkulacja customowej ilości dni
             let finalDuration = "N/A";
             if(type === 'BAN_PLAYER') {
                 const durType = document.getElementById('modal-duration-type').value;
@@ -262,6 +266,13 @@
         function initChart() { const ctx = document.getElementById('activityChart').getContext('2d'); myChart = new Chart(ctx, { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ label: 'Gracze Online', data: chartData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { suggestedMin: 0, suggestedMax: 50, grid: { color: 'rgba(255, 255, 255, 0.05)' } }, x: { grid: { display: false } } } } }); }
         const socket = io(); socket.on('live_stats', (data) => { document.getElementById('val-online').innerText = data.playersOnline; if(myChart) { chartData.shift(); chartData.push(data.playersOnline); myChart.update(); } });
         socket.on('system_alert', (alert) => showToast(alert.message, alert.type)); window.onload = initChart;
+
+        // --- SKRYPT APLIKACJI (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
     </script>
 </body>
 </html>
