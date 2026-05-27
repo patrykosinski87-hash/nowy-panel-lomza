@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>OMNI-OS | Enterprise Admin Panel</title>
+    <title>OMNI-OS | Enterprise Admin</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -24,11 +24,9 @@
         .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
         .data-table th { color: var(--text-muted); font-size: 12px; text-transform: uppercase; }
 
-        /* WYSKAKUJĄCY PANEL KAR (MODAL) */
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 99999; display: none; justify-content: center; align-items: center; }
         .modal { background: var(--bg-main); border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .modal-input, .modal-select { width: 100%; padding: 12px; margin-top: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; outline: none; }
-        .modal-input:focus, .modal-select:focus { border-color: var(--accent-blue); }
     </style>
 </head>
 <body>
@@ -43,8 +41,10 @@
 
         <ul class="nav-menu">
             <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze Live</li>
+            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze In-Game</li>
             <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery Control</li>
+            <li class="nav-item" data-target="banlist-view"><i class="fa-solid fa-gavel"></i> Lista Banów</li>
+            <li class="nav-item" id="menu-staff" data-target="staff-view" style="display: none;"><i class="fa-solid fa-user-shield"></i> Zarządzanie Zespołem</li>
             <li class="nav-item" onclick="logout()"><i class="fa-solid fa-power-off" style="color: var(--danger)"></i> Wyloguj</li>
         </ul>
     </aside>
@@ -55,14 +55,14 @@
             <h2 style="color: white; margin-bottom: 30px;">Dokładna Telemetria Sieci</h2>
             <div class="grid-stats">
                 <div class="stat-card">
-                    <div class="stat-title">Gracze w grze (Dokładna wartość)</div>
+                    <div class="stat-title">Gracze w grze</div>
                     <div class="stat-value" id="val-online">0</div> 
                 </div>
             </div>
             <div class="chart-container" style="height: 250px;"><canvas id="activityChart"></canvas></div>
         </div>
 
-        <!-- GRACZE LIVE (Lista graczy obecnych na serwerach) -->
+        <!-- GRACZE LIVE -->
         <div id="players-view" class="view-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
                 <h2 style="color: white;">Gracze In-Game (Na żywo)</h2>
@@ -71,9 +71,7 @@
             <div class="chart-container">
                 <table class="data-table">
                     <thead><tr><th>ID Robloxa</th><th>Username</th><th>Akcje</th></tr></thead>
-                    <tbody id="players-table-body">
-                        <!-- Generowane przez JS -->
-                    </tbody>
+                    <tbody id="players-table-body"></tbody>
                 </table>
             </div>
         </div>
@@ -83,8 +81,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
                 <h2 style="color: white;">Zarządzanie Serwerami</h2>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="sendServerAction('BROADCAST')" class="action-btn" style="background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); border: 1px solid var(--accent-blue);"><i class="fa-solid fa-bullhorn"></i> Globalne Ogłoszenie</button>
-                    <button onclick="sendServerAction('SHUTDOWN')" class="action-btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger);"><i class="fa-solid fa-power-off"></i> Global Shutdown</button>
+                    <button onclick="sendServerAction('BROADCAST')" class="action-btn" style="background: rgba(59, 130, 246, 0.2); color: var(--accent-blue);"><i class="fa-solid fa-bullhorn"></i> Globalne Ogłoszenie</button>
+                    <button onclick="sendServerAction('SHUTDOWN')" class="action-btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger);"><i class="fa-solid fa-power-off"></i> Global Shutdown</button>
                 </div>
             </div>
             <div class="chart-container">
@@ -94,22 +92,44 @@
                 </table>
             </div>
         </div>
+
+        <!-- LISTA BANÓW (UNBAN) -->
+        <div id="banlist-view" class="view-section">
+            <h2 style="color: white; margin-bottom: 30px;">Zarządzanie Karami (Aktywne Bany)</h2>
+            <div class="chart-container">
+                <table class="data-table">
+                    <thead><tr><th>Gracz</th><th>Powód</th><th>Czas</th><th>Nałożone przez</th><th>Akcja</th></tr></thead>
+                    <tbody id="bans-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- STAFF MANAGEMENT -->
+        <div id="staff-view" class="view-section">
+            <h2 style="color: white; margin-bottom: 30px;">Konta Administracji</h2>
+            <div class="chart-container">
+                <table class="data-table">
+                    <thead><tr><th>ID</th><th>Login</th><th>Ranga</th><th>Akcje</th></tr></thead>
+                    <tbody id="staff-table-body"></tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
-    <!-- ZAAWANSOWANY PANEL KAR (MODAL) -->
+    <!-- PANEL KAR (MODAL) -->
     <div id="punish-modal" class="modal-overlay">
         <div class="modal">
-            <h2 style="color: white; margin-bottom: 5px;">Panel Wymierzania Kar</h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Akcja na graczu: <strong id="modal-target-name" style="color:var(--accent-blue);">...</strong></p>
+            <h2 style="color: white; margin-bottom: 5px;">Wymierz Karę</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Cel: <strong id="modal-target-name" style="color:var(--accent-blue);">...</strong></p>
             
-            <label style="color: var(--text-muted); font-size: 12px; font-weight: bold;">Typ Kary</label>
+            <label style="color: var(--text-muted); font-size: 12px;">Typ Kary</label>
             <select id="modal-type" class="modal-select" onchange="toggleDurationField()">
                 <option value="KICK_PLAYER">Kick (Wyrzucenie z gry)</option>
                 <option value="BAN_PLAYER">Ban (Blokada wejścia)</option>
             </select>
 
             <div id="duration-container" style="display: none;">
-                <label style="color: var(--text-muted); font-size: 12px; font-weight: bold;">Długość Bana</label>
+                <label style="color: var(--text-muted); font-size: 12px;">Długość Bana</label>
                 <select id="modal-duration" class="modal-select">
                     <option value="1 Dzień">1 Dzień</option>
                     <option value="7 Dni">7 Dni</option>
@@ -118,12 +138,12 @@
                 </select>
             </div>
 
-            <label style="color: var(--text-muted); font-size: 12px; font-weight: bold;">Powód / Dowód</label>
-            <input type="text" id="modal-reason" class="modal-input" placeholder="Napisz powód dla gracza..." autocomplete="off">
+            <label style="color: var(--text-muted); font-size: 12px;">Powód</label>
+            <input type="text" id="modal-reason" class="modal-input" placeholder="Napisz powód kary...">
 
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button onclick="closePunishModal()" class="action-btn" style="background: transparent; border: 1px solid var(--border-color);">Anuluj</button>
-                <button onclick="executePunishment()" class="action-btn" style="background: var(--danger); color: white;"><i class="fa-solid fa-gavel"></i> Wykonaj Karę</button>
+                <button onclick="executePunishment()" class="action-btn" style="background: var(--danger); color: white;"><i class="fa-solid fa-gavel"></i> Ukaraj</button>
             </div>
         </div>
     </div>
@@ -137,6 +157,7 @@
 
         document.getElementById('ui-username').innerText = user.username;
         document.getElementById('ui-role').innerText = user.role;
+        if(user.level >= 4) document.getElementById('menu-staff').style.display = 'flex';
 
         function logout() { localStorage.clear(); window.location.href = '/login.html'; }
         function showToast(message, type = 'info') {
@@ -150,7 +171,6 @@
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 4000);
         }
 
-        // Nawigacja
         document.querySelectorAll('.nav-item[data-target]').forEach(item => {
             item.addEventListener('click', function() {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); this.classList.add('active');
@@ -159,117 +179,93 @@
                 document.getElementById(targetId).classList.add('active');
                 
                 if(targetId === 'servers-view' || targetId === 'players-view') loadLiveData();
+                if(targetId === 'banlist-view') loadBans();
+                if(targetId === 'staff-view') loadStaff();
             });
         });
 
-        // =====================================
-        // POBIERANIE DANYCH LIVE Z ROBLOXA
-        // =====================================
+        // ======================= DATA FETCHING =======================
         async function loadLiveData() {
             const res = await fetch('/api/live-data', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            if(!data.success) return;
-
-            // 1. Tabela Serwerów
-            const sbody = document.getElementById('servers-table-body');
-            sbody.innerHTML = '';
-            Object.entries(data.servers).forEach(([jobId, s]) => {
-                sbody.innerHTML += `<tr><td style="color:var(--text-muted); font-family:monospace;">${jobId.substring(0,8)}...</td><td>${s.players.length}</td><td style="color:${s.ping>200?'var(--danger)':'var(--success)'}">${s.ping} ms</td></tr>`;
-            });
-            if(Object.keys(data.servers).length === 0) sbody.innerHTML = '<tr><td colspan="3">Brak połączonych serwerów z gry.</td></tr>';
-
-            // 2. Tabela Graczy (Tylko ci obecni na serwerach)
-            const pbody = document.getElementById('players-table-body');
-            pbody.innerHTML = '';
+            
+            const sbody = document.getElementById('servers-table-body'); sbody.innerHTML = '';
+            Object.entries(data.servers).forEach(([jobId, s]) => { sbody.innerHTML += `<tr><td style="color:var(--text-muted);">${jobId.substring(0,8)}...</td><td>${s.players.length}</td><td>${s.ping} ms</td></tr>`; });
+            
+            const pbody = document.getElementById('players-table-body'); pbody.innerHTML = '';
             data.playerList.forEach(plr => {
-                pbody.innerHTML += `
-                    <tr>
-                        <td style="color:var(--text-muted);">${plr.id}</td>
-                        <td style="font-weight: bold;">${plr.name}</td>
-                        <td>
-                            <button onclick="openPunishModal('${plr.name}')" class="action-btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 5px 15px;"><i class="fa-solid fa-gavel"></i> Ukaraj</button>
-                        </td>
-                    </tr>
-                `;
+                pbody.innerHTML += `<tr><td style="color:var(--text-muted);">${plr.id}</td><td style="font-weight: bold;">${plr.name}</td><td><button onclick="openPunishModal('${plr.name}')" class="action-btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 5px 15px;">Ukaraj</button></td></tr>`;
             });
-            if(data.playerList.length === 0) pbody.innerHTML = '<tr><td colspan="3">Nikt w tej chwili nie gra.</td></tr>';
         }
 
-        // =====================================
-        // SYSTEM KAR (MODAL UZYTKOWNIKA)
-        // =====================================
+        async function loadBans() {
+            const res = await fetch('/api/bans', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            const tbody = document.getElementById('bans-table-body'); tbody.innerHTML = '';
+            data.data.forEach(b => {
+                tbody.innerHTML += `<tr><td style="font-weight:bold; color:white;">${b.username}</td><td>${b.reason}</td><td style="color:var(--danger)">${b.duration}</td><td style="color:var(--accent-blue)">${b.admin}</td><td><button onclick="unbanPlayer('${b.username}')" class="action-btn" style="background: rgba(34, 197, 94, 0.2); color: var(--success); padding: 5px 15px;">UNBAN</button></td></tr>`;
+            });
+            if(data.data.length === 0) tbody.innerHTML = "<tr><td colspan='5'>Brak zbanowanych graczy.</td></tr>";
+        }
+
+        async function unbanPlayer(username) {
+            if(!confirm(`Czy na pewno chcesz odbanować gracza ${username}?`)) return;
+            const res = await fetch('/api/bans/unban', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ username }) });
+            if(res.ok) { showToast(`Gracz ${username} został odbanowany.`, "success"); loadBans(); }
+        }
+
+        async function loadStaff() {
+            const res = await fetch('/api/staff', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            const tbody = document.getElementById('staff-table-body'); tbody.innerHTML = '';
+            data.data.forEach(s => {
+                const btn = user.level > s.level ? `<button onclick="deleteAdmin(${s.id})" class="action-btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 5px 10px;">Zwolnij</button>` : '-';
+                tbody.innerHTML += `<tr><td>#${s.id}</td><td>${s.username}</td><td>${s.role}</td><td>${btn}</td></tr>`;
+            });
+        }
+
+        async function deleteAdmin(id) {
+            if(!confirm("Usunąć tego admina?")) return;
+            await fetch('/api/staff/action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ targetId: id, action: 'delete' }) });
+            loadStaff(); showToast("Konto usunięte.", "success");
+        }
+
+        // ======================= MODAL & ACTIONS =======================
         let currentPunishTarget = "";
-
-        function openPunishModal(playerName) {
-            currentPunishTarget = playerName;
-            document.getElementById('modal-target-name').innerText = playerName;
-            document.getElementById('modal-reason').value = ""; // Czyść pole
-            document.getElementById('punish-modal').style.display = "flex";
-        }
-
-        function closePunishModal() {
-            document.getElementById('punish-modal').style.display = "none";
-        }
-
-        function toggleDurationField() {
-            const type = document.getElementById('modal-type').value;
-            const container = document.getElementById('duration-container');
-            if(type === 'BAN_PLAYER') container.style.display = "block";
-            else container.style.display = "none";
-        }
+        function openPunishModal(playerName) { currentPunishTarget = playerName; document.getElementById('modal-target-name').innerText = playerName; document.getElementById('punish-modal').style.display = "flex"; }
+        function closePunishModal() { document.getElementById('punish-modal').style.display = "none"; }
+        function toggleDurationField() { document.getElementById('duration-container').style.display = document.getElementById('modal-type').value === 'BAN_PLAYER' ? 'block' : 'none'; }
 
         async function executePunishment() {
             const type = document.getElementById('modal-type').value;
             const reason = document.getElementById('modal-reason').value;
             const duration = document.getElementById('modal-duration').value;
-
             if(!reason) return alert("Musisz podać powód kary!");
 
-            const res = await fetch('/api/servers/action', {
+            await fetch('/api/servers/action', {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: type, target: currentPunishTarget, reason: reason, duration: type === 'BAN_PLAYER' ? duration : "N/A" })
+                body: JSON.stringify({ type, target: currentPunishTarget, reason, duration: type === 'BAN_PLAYER' ? duration : "N/A" })
             });
-
-            if(res.ok) {
-                showToast(`Wysłano komendę ${type} dla ${currentPunishTarget}.`, "success");
-                closePunishModal();
-                loadLiveData(); // Odśwież listę, ukarany gracz powinien zniknąć
-            }
+            showToast(`Ukarano ${currentPunishTarget}.`, "success"); closePunishModal(); loadLiveData();
         }
 
         async function sendServerAction(type) {
-            let payload = "";
-            if(type === 'BROADCAST') {
-                payload = prompt("Wpisz treść globalnego ogłoszenia (Wyskoczy na ekranie w grze):");
-                if(!payload) return;
-            } else if (type === 'SHUTDOWN') {
-                if(!confirm("CZY NA PEWNO CHCESZ WYŁĄCZYĆ WSZYSTKIE SERWERY GRY?")) return;
-            }
-
-            const res = await fetch('/api/servers/action', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type, payload })
-            });
-            if(res.ok) showToast("Wysłano żądanie do serwerów gry.", "success");
+            let payload = type === 'BROADCAST' ? prompt("Treść ogłoszenia:") : null;
+            if(type === 'BROADCAST' && !payload) return;
+            if(type === 'SHUTDOWN' && !confirm("Wyłączyć serwery?")) return;
+            await fetch('/api/servers/action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type, payload }) });
+            showToast("Wysłano komendę.", "success");
         }
 
-        // =====================================
-        // WYKRES I WEBSOCKETY
-        // =====================================
-        let chartData = Array(20).fill(0); 
-        let myChart;
+        // ======================= WEBSOCKETS =======================
+        let chartData = Array(20).fill(0); let myChart;
         function initChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
             myChart = new Chart(ctx, { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ label: 'Gracze Online', data: chartData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { suggestedMin: 0, suggestedMax: 50, grid: { color: 'rgba(255, 255, 255, 0.05)' } }, x: { grid: { display: false } } } } });
         }
-
         const socket = io();
-        socket.on('live_stats', (data) => {
-            document.getElementById('val-online').innerText = data.playersOnline; // Aktualizuje DOKŁADNĄ liczbę z wszystkich serwerów
-            if (myChart) { chartData.shift(); chartData.push(data.playersOnline); myChart.update(); }
-        });
+        socket.on('live_stats', (data) => { document.getElementById('val-online').innerText = data.playersOnline; if(myChart) { chartData.shift(); chartData.push(data.playersOnline); myChart.update(); } });
         socket.on('system_alert', (alert) => showToast(alert.message, alert.type));
-
         window.onload = initChart;
     </script>
 </body>
