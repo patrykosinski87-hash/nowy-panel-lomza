@@ -2,199 +2,156 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>LOMZA CORE | txElite Professional</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNI-OS | Roblox Admin Panel</title>
+    <!-- Zwróć uwagę na poprawną ścieżkę do CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Czcionka Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Ikony -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Biblioteka do wykresów -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="aurora"></div>
 
-    <div class="app-shell">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="brand">
-                <i class="fas fa-microchip" style="color:var(--accent); font-size:24px;"></i>
-                <span>OMNI-OS <small style="font-size:9px; opacity:0.5;">v4.0.1</small></span>
+    <!-- SIDEBAR NAWIGACYJNY -->
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-cube"></i> OMNI-OS v5
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
+            <li class="nav-item"><i class="fa-solid fa-users"></i> Gracze</li>
+            <li class="nav-item"><i class="fa-solid fa-server"></i> Serwery (Live)</li>
+            <li class="nav-item"><i class="fa-solid fa-gavel"></i> Moderacja</li>
+            <li class="nav-item"><i class="fa-solid fa-shield-halved"></i> Anti-Cheat</li>
+            <li class="nav-item"><i class="fa-solid fa-coins"></i> Ekonomia</li>
+            <li class="nav-item"><i class="fa-solid fa-user-tie"></i> Role i Dostępy</li>
+            <li class="nav-item"><i class="fa-solid fa-code"></i> Dev Tools</li>
+            <li class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</li>
+        </ul>
+    </aside>
+
+    <!-- GŁÓWNA ZAWARTOŚĆ -->
+    <main class="main-content">
+        <header>
+            <div>
+                <h2>Witaj ponownie, Admin</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">
+                    <span class="pulse-status"></span> Systems Integrated. Engine: LOMZA-V5
+                </p>
             </div>
-
-            <div class="nav-group">
-                <div class="nav-label">General</div>
-                <div class="nav-item active" onclick="tab('dash', this)"><i class="fas fa-columns"></i> Dashboard</div>
-                <div class="nav-item" onclick="tab('players', this)"><i class="fas fa-user-astronaut"></i> Player Manager</div>
-                <div class="nav-item" onclick="tab('servers', this)"><i class="fas fa-server"></i> Live Servers</div>
+            <div>
+                <input type="text" class="search-bar" placeholder="Szukaj gracza (Ctrl+K)...">
             </div>
+        </header>
 
-            <div class="nav-group">
-                <div class="nav-label">Security</div>
-                <div class="nav-item"><i class="fas fa-shield-virus"></i> Anti-Cheat</div>
-                <div class="nav-item"><i class="fas fa-gavel"></i> Moderation</div>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-label">System</div>
-                <div class="nav-item"><i class="fas fa-chart-line"></i> Economy</div>
-                <div class="nav-item"><i class="fas fa-terminal"></i> Developer Tools</div>
-            </div>
-
-            <div class="sidebar-user" style="margin-top:auto; background:rgba(255,255,255,0.03); padding:16px; border-radius:20px; display:flex; align-items:center; gap:12px;">
-                <div class="avatar" style="width:36px; height:36px; background:var(--accent); border-radius:10px; display:grid; place-items:center; font-weight:800;">W</div>
-                <div style="flex:1">
-                    <b id="me-nick" style="font-size:13px;">...</b><br>
-                    <small id="me-role" style="font-size:10px; color:var(--text-secondary); text-transform:uppercase;">Owner</small>
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view">
+            <!-- Karty Statystyk -->
+            <div class="grid-stats">
+                <div class="stat-card">
+                    <div class="stat-title">Aktywni Gracze</div>
+                    <div class="stat-value" id="val-players">Ładowanie...</div>
                 </div>
-                <i class="fas fa-power-off" onclick="logout()" style="color:var(--danger); cursor:pointer; font-size:14px;"></i>
-            </div>
-        </aside>
-
-        <!-- MAIN VIEWPORT -->
-        <main class="viewport">
-            <!-- DASHBOARD SECTION -->
-            <div id="dash" class="tab-content" style="display:contents;">
-                <header class="glass-card" style="grid-column: span 6; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, var(--glass-bg), transparent);">
-                    <div>
-                        <h1 style="font-weight:800; font-size:24px;">Systems Integrated.</h1>
-                        <p style="color:var(--text-secondary); font-size:14px;">Welcome back, <span id="welcome-name" class="accent">...</span>. Everything looks normal.</p>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="badge badge-success"><i class="fas fa-circle" style="font-size:8px; margin-right:6px;"></i> ENGINE: LOMZA-V4</span>
-                    </div>
-                </header>
-
-                <div class="glass-card stat-pill">
-                    <small>ACTIVE PLAYERS</small>
-                    <h2 id="st-players">0</h2>
+                <div class="stat-card">
+                    <div class="stat-title">Przychód (24H)</div>
+                    <div class="stat-value" id="val-revenue">Ładowanie...</div>
                 </div>
-                <div class="glass-card stat-pill">
-                    <small>REVENUE (24H)</small>
-                    <h2 style="color:var(--neon-cyan);">$12,420</h2>
+                <div class="stat-card">
+                    <div class="stat-title">Network TPS</div>
+                    <div class="stat-value" id="val-tps">Ładowanie...</div>
                 </div>
-                <div class="glass-card stat-pill">
-                    <small>THREAT LEVEL</small>
-                    <h2 style="color:var(--danger);">LOW</h2>
-                </div>
-                <div class="glass-card stat-pill">
-                    <small>NETWORK TPS</small>
-                    <h2 style="color:var(--success);">59.8</h2>
-                </div>
-                <div class="glass-card stat-pill">
-                    <small>UPSCALE</small>
-                    <h2>+14%</h2>
-                </div>
-                <div class="glass-card stat-pill">
-                    <small>ALERTS</small>
-                    <h2>02</h2>
-                </div>
-
-                <div class="glass-card main-chart-card">
-                    <h3 style="font-size:14px; margin-bottom:20px; font-weight:700;">USER RETENTION & ACTIVITY</h3>
-                    <div style="height:320px;"><canvas id="mainChart"></canvas></div>
-                </div>
-
-                <div class="glass-card live-feed-card">
-                    <h3 style="font-size:14px; margin-bottom:20px; font-weight:700;">LIVE SECURITY FEED</h3>
-                    <div id="live-logs" style="font-family:'JetBrains Mono'; font-size:11px; color:var(--text-secondary); display:flex; flex-direction:column; gap:12px;">
-                        <div>[08:24:11] <span style="color:var(--neon-cyan)">[NETWORK]</span> Ping established with main instance.</div>
-                        <div>[08:24:15] <span style="color:var(--accent)">[AUTH]</span> Admin wexx_ authorized successfully.</div>
-                        <div>[08:25:01] <span style="color:var(--danger)">[SECURITY]</span> Blocked RemoteEvent Spam from ID: 1242.</div>
-                        <div>[08:25:02] <span style="color:var(--neon-purple)">[ECONOMY]</span> High value trade detected: Marek -> Kowal ($10k).</div>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-title">Poziom Zagrożenia</div>
+                    <div class="stat-value" id="val-threat" style="color: var(--success);">Ładowanie...</div>
                 </div>
             </div>
 
-            <!-- PLAYERS SECTION -->
-            <div id="players" class="tab-content" style="display:none; grid-column: span 6;">
-                <div class="glass-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h2>GLOBAL PLAYER DATABASE</h2>
-                        <div style="background:rgba(0,0,0,0.2); padding:10px 20px; border-radius:12px; border:1px solid var(--glass-border);">
-                            <i class="fas fa-search" style="color:var(--accent); margin-right:10px;"></i>
-                            <input type="text" placeholder="Search by ID, Username, IP or HWID..." style="background:none; border:none; color:white; outline:none; width:300px;">
-                        </div>
-                    </div>
-                    <table class="pro-table">
-                        <thead><tr><th>ID</th><th>PLAYER IDENTITY</th><th>STATUS</th><th>ECONOMY</th><th>HEALTH</th><th>ACTIONS</th></tr></thead>
-                        <tbody id="p-list"></tbody>
-                    </table>
-                </div>
+            <!-- Wykres Aktywności -->
+            <div class="chart-container">
+                <h3 style="margin-bottom: 20px; color: var(--text-muted);">Aktywność Graczy (Live)</h3>
+                <canvas id="activityChart"></canvas>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
+    <!-- SKRYPT PANELU -->
     <script>
-        async function init() {
-            const r = await fetch('/api/check'); const d = await r.json();
-            if(!d.loggedIn) window.location.href = 'login.html';
-            document.getElementById('me-nick').innerText = d.user.name;
-            document.getElementById('welcome-name').innerText = d.user.name;
-            document.getElementById('me-role').innerText = d.user.role;
-            loadStats();
-        }
-        init();
-
-        function tab(id, el) {
-            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-            document.getElementById(id).style.display = (id === 'dash' ? 'contents' : 'block');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-            if(id === 'players') loadPlayers();
-        }
-
-        async function loadStats() {
-            const r = await fetch('/api/v1/dashboard'); const d = await r.json();
-            document.getElementById('st-players').innerText = d.online;
-        }
-
-        async function loadPlayers() {
-            const r = await fetch('/api/v1/players'); const data = await r.json();
-            document.getElementById('p-list').innerHTML = data.map(p => `
-                <tr>
-                    <td><small style="opacity:0.5;">#${p.id}</small></td>
-                    <td><b style="font-size:15px;">${p.name}</b><br><small style="color:var(--text-secondary)">${p.job || 'Civilian'}</small></td>
-                    <td><span class="badge badge-success">ACTIVE</span></td>
-                    <td style="color:var(--neon-cyan); font-weight:700;">$${p.money.toLocaleString()}</td>
-                    <td><div style="width:100px; height:6px; background:rgba(255,255,255,0.05); border-radius:10px;"><div style="width:85%; height:100%; background:var(--success); border-radius:10px; box-shadow:0 0 10px var(--success);"></div></div></td>
-                    <td>
-                        <button style="background:var(--accent); border:none; color:white; padding:8px 12px; border-radius:8px; cursor:pointer;"><i class="fas fa-eye"></i></button>
-                        <button style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; cursor:pointer; margin-left:4px;"><i class="fas fa-ban"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        async function logout() { await fetch('/api/logout', {method:'POST'}); window.location.href='login.html'; }
-
-        // Chart.js Configuration
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(129, 140, 248, 0.4)');
-        gradient.addColorStop(1, 'rgba(129, 140, 248, 0)');
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['00:00','04:00','08:00','12:00','16:00','20:00','23:59'],
-                datasets: [{
-                    label: 'Players Online',
-                    data: [420, 210, 890, 1540, 1200, 1900, 800],
-                    borderColor: '#818cf8',
-                    borderWidth: 3,
-                    fill: true,
-                    backgroundColor: gradient,
-                    tension: 0.4,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b' } },
-                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
+        // 1. Pobieranie danych z naprawionego API
+        async function fetchSystemData() {
+            try {
+                // To zapytanie wreszcie zadziała i nie zwróci błędu w konsoli!
+                const response = await fetch('/api/check'); 
+                const data = await response.json();
+                
+                if(data.status === "success") {
+                    document.getElementById('val-players').innerText = data.data.playersOnline.toLocaleString();
+                    document.getElementById('val-revenue').innerText = data.data.revenue;
+                    document.getElementById('val-tps').innerText = data.data.tps;
+                    document.getElementById('val-threat').innerText = data.data.threatLevel;
                 }
+            } catch (error) {
+                console.error("Błąd API:", error);
+                document.getElementById('val-players').innerText = "Błąd połączenia";
             }
-        });
+        }
+
+        // 2. Inicjalizacja pięknego wykresu Chart.js (SaaS style)
+        function initChart() {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            
+            // Gradient dla wykresu
+            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)'); // fiolet
+            gradient.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', 'Teraz'],
+                    datasets: [{
+                        label: 'Gracze Online',
+                        data: [800, 950, 1100, 1050, 1300, 1500, 1642],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        tension: 0.4, // Zaokrąglenie linii
+                        fill: true,
+                        pointBackgroundColor: '#09090b',
+                        pointBorderColor: '#8b5cf6',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#a1a1aa' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#a1a1aa' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Uruchomienie przy starcie
+        window.onload = () => {
+            fetchSystemData();
+            initChart();
+            
+            // Symulacja aktualizacji live co 5 sekund
+            setInterval(fetchSystemData, 5000);
+        };
     </script>
 </body>
 </html>
