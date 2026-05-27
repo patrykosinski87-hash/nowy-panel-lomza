@@ -2,15 +2,11 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>OMNI-OS | Auth</title>
+    <title>OMNI-OS | Secure Auth</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         body { justify-content: center; align-items: center; }
-        .auth-box {
-            background: var(--bg-panel); backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color); padding: 40px; border-radius: 20px;
-            width: 100%; max-width: 400px; text-align: center;
-        }
+        .auth-box { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-color); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
         .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); }
         .tab { flex: 1; padding: 10px; cursor: pointer; color: var(--text-muted); }
         .tab.active { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
@@ -25,48 +21,33 @@
 </head>
 <body>
     <div class="auth-box">
-        <h2 class="brand" style="justify-content: center;">OMNI-OS</h2>
+        <h2 class="brand" style="justify-content: center;">OMNI-OS v7</h2>
         
-        <!-- ZAKŁADKI -->
-        <div class="tabs" id="authTabs">
+        <div class="tabs">
             <div class="tab active" onclick="switchTab('login')">Logowanie</div>
             <div class="tab" onclick="switchTab('register')">Rejestracja</div>
         </div>
 
-        <!-- LOGOWANIE -->
         <div id="form-login" class="form-section active">
             <input type="text" id="l-user" class="login-input" placeholder="Login">
             <input type="password" id="l-pass" class="login-input" placeholder="Hasło">
-            <button class="login-btn" onclick="login()">ZALOGUJ</button>
+            <button class="login-btn" onclick="login()">ZALOGUJ SYSTEM</button>
         </div>
 
-        <!-- REJESTRACJA -->
         <div id="form-register" class="form-section">
             <input type="text" id="r-user" class="login-input" placeholder="Wymyśl Login">
             <input type="password" id="r-pass" class="login-input" placeholder="Hasło">
-            <input type="text" id="r-code" class="login-input" placeholder="Kod autoryzacji roli">
+            <input type="text" id="r-code" class="login-input" placeholder="Kod zaproszenia">
             <button class="login-btn" onclick="register()">STWÓRZ KONTO</button>
-        </div>
-
-        <!-- WYMUSZONY RESET -->
-        <div id="form-reset" class="form-section">
-            <h3 style="color: var(--danger); margin-bottom:10px;">Administracja wymusiła reset danych!</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Musisz ustawić nowy login i hasło.</p>
-            <input type="text" id="reset-user" class="login-input" placeholder="Nowy Login">
-            <input type="password" id="reset-pass" class="login-input" placeholder="Nowe Hasło">
-            <button class="login-btn" onclick="updateCredentials()">ZAPISZ I ZALOGUJ</button>
         </div>
 
         <p id="msg" class="msg"></p>
     </div>
 
     <script>
-        let tempUserId = null; // Zapisuje id usera jesli musi zresetowac haslo
-
         function showMessage(text, isError = true) {
             const msg = document.getElementById('msg');
-            msg.style.display = 'block';
-            msg.innerText = text;
+            msg.style.display = 'block'; msg.innerText = text;
             msg.className = isError ? 'msg error' : 'msg success';
         }
 
@@ -74,19 +55,29 @@
             document.getElementById('msg').style.display = 'none';
             document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            
             document.getElementById(`form-${tab}`).classList.add('active');
             if(tab === 'login') document.querySelectorAll('.tab')[0].classList.add('active');
             if(tab === 'register') document.querySelectorAll('.tab')[1].classList.add('active');
         }
 
         async function register() {
-            const res = await fetch('/api/register', {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: document.getElementById('r-user').value, pass: document.getElementById('r-pass').value, roleCode: document.getElementById('r-code').value }) // FIXED JSON PAYLOAD
+            });
+            const data = await res.json();
+            showMessage(data.message, !data.success);
+            if(data.success) setTimeout(() => switchTab('login'), 2000);
+        }
+
+        // --- ZMODYFIKOWANA FUNKCJA WYKORZYSTUJĄCA WŁAŚCIWE NAZWY PÓL ---
+        async function register() {
+            const res = await fetch('/api/auth/register', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    username: document.getElementById('r-user').value,
-                    password: document.getElementById('r-pass').value,
-                    code: document.getElementById('r-code').value 
+                    username: document.getElementById('r-user').value, 
+                    password: document.getElementById('r-pass').value, 
+                    roleCode: document.getElementById('r-code').value 
                 })
             });
             const data = await res.json();
@@ -95,43 +86,21 @@
         }
 
         async function login() {
-            const res = await fetch('/api/login', {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    username: document.getElementById('l-user').value,
-                    password: document.getElementById('l-pass').value
+                    username: document.getElementById('l-user').value, 
+                    password: document.getElementById('l-pass').value 
                 })
             });
             const data = await res.json();
-            
-            if(data.require_reset) {
-                tempUserId = data.userId;
-                document.getElementById('authTabs').style.display = 'none';
-                switchTab('reset');
-                showMessage("Zmień dane logowania.", false);
-            } else if (data.success) {
-                // Zapisujemy całe dane usera do LocalStorage, by panel wiedział kim jest
-                localStorage.setItem('omni_user', JSON.stringify(data.userData));
+            if (data.success) {
+                // Zapisujemy nowy Bezpieczny Token JWT
+                localStorage.setItem('omni_jwt', data.token);
+                localStorage.setItem('omni_user', JSON.stringify(data.user));
                 window.location.href = '/';
             } else {
                 showMessage(data.message, true);
-            }
-        }
-
-        async function updateCredentials() {
-            const res = await fetch('/api/update-credentials', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    userId: tempUserId,
-                    newUsername: document.getElementById('reset-user').value,
-                    newPassword: document.getElementById('reset-pass').value
-                })
-            });
-            const data = await res.json();
-            showMessage(data.message, !data.success);
-            if(data.success) {
-                document.getElementById('authTabs').style.display = 'flex';
-                setTimeout(() => switchTab('login'), 2000);
             }
         }
     </script>
