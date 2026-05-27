@@ -2,9 +2,12 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Lomza RP | Master Control</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lomza RP | Elite Dashboard</title>
+    <!-- POPRAWIONA ŚCIEŻKA DO CSS -->
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="bg-glow"></div>
@@ -36,54 +39,72 @@
     </div>
 
     <div class="app-container">
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <h2 class="logo">LOMZA <span>TX</span></h2>
-            <nav>
+            <h2 class="logo" style="font-family:'Syne'; color:var(--accent); text-align:center; margin-bottom:30px;">LOMZA TX</h2>
+            <nav style="flex:1">
                 <div class="nav-item active" onclick="tab('dash', this)"><i class="fas fa-home"></i> Dashboard</div>
                 <div class="nav-item" onclick="tab('players', this)"><i class="fas fa-users"></i> Gracze</div>
                 <div class="nav-item" onclick="tab('server', this)"><i class="fas fa-server"></i> Serwer</div>
             </nav>
             <div class="sidebar-footer">
-                <span id="me-name">Admin</span>
-                <i class="fas fa-sign-out-alt" onclick="logout()"></i>
+                <div>
+                    <span id="me-name" style="font-weight:800; font-size:13px; display:block;">...</span>
+                    <small id="me-role" style="color:var(--accent); font-size:10px; font-weight:800; text-transform:uppercase;">Admin</small>
+                </div>
+                <i class="fas fa-power-off" onclick="logout()" style="color:var(--danger); cursor:pointer; font-size:18px;"></i>
             </div>
         </aside>
 
+        <!-- Main Content -->
         <main class="main-content">
             <!-- DASHBOARD -->
-            <section id="tab-dash" class="tab-page active">
-                <header class="bento-card header-card">
-                    <h1>Witaj, <span id="hello-txt" class="accent">...</span></h1>
-                    <div id="clock">00:00</div>
+            <section id="tab-dash" class="tab-page active" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                <header class="bento-card header-card" style="grid-column: span 4; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h1 id="hello-txt" style="font-family:'Syne'; font-size:26px;">System Online</h1>
+                        <p style="color:#64748b">Witaj w centrum dowodzenia Łomża Roleplay.</p>
+                    </div>
+                    <div style="text-align:right">
+                        <div id="clock" style="font-family:'Syne'; font-size:24px">00:00</div>
+                        <small style="color:var(--accent); font-weight:800">LOMZA, PL</small>
+                    </div>
                 </header>
-                <div class="stats-row">
-                    <div class="bento-card stat-card"><p>ONLINE</p><span class="stat-val" id="stat-p">0</span></div>
-                    <div class="bento-card stat-card"><p>STATUS</p><span class="stat-val" style="color:var(--success)">LIVE</span></div>
+                
+                <div class="bento-card stat-card"><p>ONLINE</p><span class="stat-val" id="stat-p">0</span></div>
+                <div class="bento-card stat-card"><p>STATUS</p><span class="stat-val" style="color:var(--success)">LIVE</span></div>
+                <div class="bento-card stat-card" style="grid-column: span 2"><p>OBCIĄŻENIE CPU</p><span class="stat-val" style="color:#c084fc">12%</span></div>
+
+                <div class="bento-card chart-card" style="grid-column: span 3; height:350px;">
+                    <canvas id="mainChart"></canvas>
+                </div>
+
+                <div class="bento-card log-card" style="grid-column: span 1;">
+                    <h3 style="font-size:12px; margin-bottom:15px; opacity:0.5; font-family:'Syne';">OSTATNIE LOGI</h3>
+                    <div id="log-list" style="font-size:11px; overflow-y:auto; max-height:250px;"></div>
                 </div>
             </section>
 
             <!-- PLAYERS -->
-            <section id="tab-players" class="tab-page" style="display:none">
+            <section id="tab-players" class="tab-page" style="display:none;">
                 <div class="bento-card">
-                    <h2>ZARZĄDZANIE GRACZAMI</h2>
-                    <table style="width:100%"><tbody id="p-list"></tbody></table>
+                    <h2 style="font-family:'Syne'; margin-bottom:20px;">ZARZĄDZANIE OBYWATELAMI</h2>
+                    <table style="width:100%; border-collapse: collapse;">
+                        <thead style="text-align:left; color:#64748b; font-size:12px;">
+                            <tr><th>ID</th><th>NICK</th><th>PORTFEL</th><th>AKCJE</th></tr>
+                        </thead>
+                        <tbody id="p-list"></tbody>
+                    </table>
                 </div>
             </section>
 
-            <!-- SERVER SETTINGS & ANNOUNCEMENTS -->
-            <section id="tab-server" class="tab-page" style="display:none">
-                <div class="bento-grid-2">
-                    <div class="bento-card">
-                        <h2>OGŁOSZENIE GLOBALNE</h2>
-                        <p style="font-size:12px; opacity:0.6; margin-bottom:15px;">Wiadomość pojawi się na górze ekranu wszystkich graczy.</p>
-                        <input type="text" id="announcementMsg" placeholder="Treść ogłoszenia...">
-                        <button class="btn-primary" style="margin-top:10px;" onclick="sendAnnouncement()">WYŚLIJ OGŁOSZENIE</button>
-                    </div>
-                    <div class="bento-card">
-                        <h2>KONTROLA SERWERA</h2>
-                        <button class="btn-danger" style="width:100%; margin-top:10px;">GLOBAL KICK</button>
-                        <button class="btn-primary" style="width:100%; margin-top:10px; background:#f59e0b">MAINTENANCE MODE</button>
-                    </div>
+            <!-- SERVER SETTINGS -->
+            <section id="tab-server" class="tab-page" style="display:none;">
+                <div class="bento-card" style="max-width: 500px;">
+                    <h2 style="font-family:'Syne';">OGŁOSZENIE GLOBALNE</h2>
+                    <p style="font-size:12px; opacity:0.6; margin-bottom:15px;">Wiadomość pojawi się każdemu graczowi na ekranie.</p>
+                    <input type="text" id="announcementMsg" placeholder="Treść ogłoszenia...">
+                    <button class="btn-primary" style="margin-top:10px;" onclick="sendAnnouncement()">WYŚLIJ OGŁOSZENIE</button>
                 </div>
             </section>
         </main>
@@ -97,14 +118,15 @@
             const r = await fetch('/api/check'); const d = await r.json();
             if(!d.loggedIn) window.location.href = 'login.html';
             document.getElementById('me-name').innerText = d.user.name;
-            document.getElementById('hello-txt').innerText = d.user.name;
+            document.getElementById('me-role').innerText = d.user.role;
+            document.getElementById('hello-txt').innerText = "Witaj, " + d.user.name;
             loadData();
         }
         check();
 
         function tab(id, el) {
             document.querySelectorAll('.tab-page').forEach(p => p.style.display = 'none');
-            document.getElementById('tab-'+id).style.display = (id === 'dash' ? 'block' : 'block');
+            document.getElementById('tab-'+id).style.display = (id === 'dash' ? 'grid' : 'block');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             el.classList.add('active');
         }
@@ -113,18 +135,24 @@
             const r = await fetch('/api/data'); const d = await r.json();
             document.getElementById('stat-p').innerText = d.players.length;
             document.getElementById('p-list').innerHTML = d.players.map(p => `
-                <tr>
-                    <td>#${p.id}</td><td><b>${p.name}</b></td>
-                    <td><button class="btn-s" onclick="openModal('KICK', ${p.id}, '${p.name}')">KICK</button>
-                    <button class="btn-s btn-ban" onclick="openModal('BAN', ${p.id}, '${p.name}')">BAN</button></td>
+                <tr style="border-bottom: 1px solid var(--glass-border);">
+                    <td style="padding:15px;">#${p.id}</td><td><b>${p.name}</b></td><td style="color:var(--success)">$${p.money}</td>
+                    <td>
+                        <button class="btn-s" onclick="openModal('KICK', ${p.id}, '${p.name}')">KICK</button>
+                        <button class="btn-s btn-ban" style="background:var(--danger)" onclick="openModal('BAN', ${p.id}, '${p.name}')">BAN</button>
+                    </td>
                 </tr>`).join('');
+            
+            document.getElementById('log-list').innerHTML = d.logs.map(l => `
+                <div style="margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+                    <b>${l.admin}</b>: ${l.action} <br><small style="opacity:0.5">${l.target}</small>
+                </div>`).join('');
         }
 
         function openModal(action, id, name) {
-            currentAction = action;
-            currentTarget = {id, name};
+            currentAction = action; currentTarget = {id, name};
             document.getElementById('modalTitle').innerText = action + " GRACZA";
-            document.getElementById('modalTarget').innerText = "Cel: " + name + " (ID: " + id + ")";
+            document.getElementById('modalTarget').innerText = "Cel: " + name;
             document.getElementById('durationGroup').style.display = (action === 'BAN' ? 'block' : 'none');
             document.getElementById('modModal').style.display = 'flex';
         }
@@ -135,30 +163,32 @@
             const reason = document.getElementById('modReason').value;
             const duration = document.getElementById('modDuration').value;
             if(!reason) return alert("Podaj powód!");
-
             await fetch('/api/action', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
+                method: 'POST', headers: {'Content-Type':'application/json'},
                 body: JSON.stringify({ action: currentAction, ...currentTarget, reason, duration })
             });
-            closeModal();
-            loadData();
+            closeModal(); loadData();
         }
 
         async function sendAnnouncement() {
             const msg = document.getElementById('announcementMsg').value;
             if(!msg) return;
-            await fetch('/api/announcement', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ message: msg })
-            });
-            alert("Ogłoszenie wysłane!");
-            document.getElementById('announcementMsg').value = '';
+            await fetch('/api/announcement', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ message: msg }) });
+            alert("Ogłoszenie wysłane!"); document.getElementById('announcementMsg').value = '';
         }
 
-        function logout() { fetch('/api/logout', {method:'POST'}).then(() => window.location.href='login.html'); }
+        async function logout() { await fetch('/api/logout', {method:'POST'}); window.location.href='login.html'; }
+
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 1000);
+
+        new Chart(document.getElementById('mainChart').getContext('2d'), { 
+            type:'line', 
+            data:{ 
+                labels:['10:00','14:00','18:00','22:00','02:00'], 
+                datasets:[{ label:'Gracze', data:[25, 60, 120, 95, 30], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)' }] 
+            }, 
+            options: { responsive:true, maintainAspectRatio:false, plugins: { legend: { display: false } } } 
+        });
     </script>
 </body>
 </html>
