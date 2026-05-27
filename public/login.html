@@ -2,41 +2,96 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>txElite | Auth</title>
-    <!-- POPRAWIONA ŚCIEŻKA DO CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNI-OS | Logowanie</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { justify-content: center; align-items: center; }
+        .login-box {
+            background: var(--bg-panel);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            letter-spacing: 2px;
+            outline: none;
+            transition: 0.3s;
+        }
+        .login-input:focus { border-color: var(--accent-blue); }
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .login-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        #error-msg { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; }
+    </style>
 </head>
-<body class="auth-body">
-    <script>
-        fetch('/api/check').then(r => r.json()).then(d => { if(d.loggedIn) window.location.href = 'index.html'; });
-    </script>
-    <div class="bg-glow"></div>
-    <div class="auth-card">
-        <h1 style="font-family:'Syne'; color:var(--accent); font-size: 32px;">txElite</h1>
-        <p style="color:#64748b; font-size: 10px; letter-spacing: 2px; font-weight: 800; margin-bottom:30px;">SECURE ACCESS SYSTEM</p>
+<body>
+    <div class="login-box">
+        <h2 class="brand" style="justify-content: center; margin-bottom: 10px;">OMNI-OS</h2>
+        <p style="color: var(--text-muted); font-size: 14px;">Wprowadź kod dostępu autoryzacji</p>
         
-        <input type="text" id="u" placeholder="NAZWA UŻYTKOWNIKA" autocomplete="off">
-        <input type="password" id="p" placeholder="HASŁO">
-        <input type="text" id="c" placeholder="KOD ZAPROSZENIA" style="display:none">
-        
-        <button class="btn-primary" onclick="auth()" id="b" style="width:100%">ZALOGUJ SIĘ</button>
-        <p onclick="toggle()" style="margin-top:20px; font-size:12px; cursor:pointer; color:#94a3b8">Zmień tryb dostępu</p>
-        <div id="m" style="margin-top:20px; font-weight:800; font-size:12px; color:var(--danger)"></div>
+        <input type="password" id="access-code" class="login-input" placeholder="Wpisz kod..." autocomplete="off">
+        <button class="login-btn" onclick="attemptLogin()">ZALOGUJ</button>
+        <p id="error-msg">Nieprawidłowy kod.</p>
     </div>
 
     <script>
-        let isL = true;
-        function toggle() { isL = !isL; document.getElementById('c').style.display = isL ? 'none':'block'; document.getElementById('b').innerText = isL ? 'ZALOGUJ SIĘ' : 'STWÓRZ KONTO'; }
-        async function auth() {
-            const r = await fetch('/api/' + (isL ? 'login' : 'register'), { 
-                method:'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body: JSON.stringify({username: u.value, password: p.value, code: c.value}) 
-            });
-            const d = await r.json();
-            if(r.ok) window.location.href = 'index.html'; 
-            else document.getElementById('m').innerText = d.error;
+        async function attemptLogin() {
+            const code = document.getElementById('access-code').value;
+            const errorMsg = document.getElementById('error-msg');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Zapisujemy token w przeglądarce i przekierowujemy na panel
+                    localStorage.setItem('omni_token', data.token);
+                    window.location.href = '/';
+                } else {
+                    errorMsg.style.display = 'block';
+                    errorMsg.innerText = data.message;
+                }
+            } catch (err) {
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = "Błąd połączenia z serwerem.";
+            }
         }
+
+        // Enter w inpucie też klika przycisk
+        document.getElementById('access-code').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') attemptLogin();
+        });
     </script>
 </body>
 </html>
