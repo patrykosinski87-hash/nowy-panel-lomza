@@ -17,8 +17,8 @@ const ROBLOX_API_KEY = "OMNI_ROBLOX_KEY_2024";
 // ==========================================
 // 🛠️ KONFIGURACJA DISCORD WEBHOOKÓW 🛠️
 // ==========================================
-const WEBHOOK_BANS = "TUTAJ_WKLEJ_LINK_WEBHOOKA_TYLKO_DO_BANOW";
-const WEBHOOK_AUDIT = "TUTAJ_WKLEJ_LINK_WEBHOOKA_DO_RESZTY_LOGOW";
+const WEBHOOK_BANS = "https://discord.com/api/webhooks/1509231524443324517/9x-dT7uK76oF2CF3JOXZVF2f6ZFhML2A8dpYbAvz5ous44pqH7RX2ig631dRj7Sxiqfp";
+const WEBHOOK_AUDIT = "https://discord.com/api/webhooks/1509231315591893103/TJyJMf4b4tDD4prdNZXu6B0aijLbEA503Ek3fVyrnv0mJTaLfDlQ5F8jONLoZTrs5Sz5";
 
 const ROLE_MAP = { 1: 'Pomocnik', 2: 'Moderator', 3: 'Admin', 4: 'Zarząd', 5: 'Owner' };
 
