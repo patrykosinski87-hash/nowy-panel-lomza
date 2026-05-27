@@ -2,26 +2,36 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Łomża Roleplay</title>
+    <title>OMNI-OS | Secure Auth</title>
+    
+    <!-- KONFIGURACJA APLIKACJI (PWA) -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <link rel="stylesheet" href="/css/style.css">
     <style>
         body { justify-content: center; align-items: center; }
-        .auth-box { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-color); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); }
-        .tab { flex: 1; padding: 10px; cursor: pointer; color: var(--text-muted); }
+        .auth-box { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-light); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 15px 20px 30px rgba(0,0,0,0.6); }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .tab { flex: 1; padding: 10px; cursor: pointer; color: var(--text-muted); transition: 0.3s; }
         .tab.active { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
-        .login-input { width: 100%; padding: 15px; margin: 10px 0; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 10px; color: white; outline: none; }
-        .login-btn { width: 100%; padding: 15px; background: linear-gradient(to right, var(--accent-blue), var(--accent-purple)); border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px;}
-        .msg { font-size: 14px; margin-top: 10px; display: none; }
+        .login-input { width: 100%; padding: 15px; margin: 10px 0; background: #0a0a0c; border: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; outline: none; box-shadow: inset 3px 3px 8px rgba(0,0,0,0.8); }
+        .login-input:focus { border-color: var(--accent-blue); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8), 0 0 15px rgba(59, 130, 246, 0.3); }
+        .login-btn { width: 100%; padding: 15px; background: linear-gradient(180deg, var(--accent-blue), var(--accent-blue-dark)); border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 6px 0 #0f172a, 0 10px 20px rgba(0,0,0,0.6); transform: translateY(-6px); transition: 0.1s; }
+        .login-btn:active { transform: translateY(0); box-shadow: 0 0 0 #0f172a, 0 2px 5px rgba(0,0,0,0.6); }
+        .msg { font-size: 14px; margin-top: 15px; display: none; font-weight: bold; }
         .msg.error { color: var(--danger); }
         .msg.success { color: var(--success); }
         .form-section { display: none; }
-        .form-section.active { display: block; }
+        .form-section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="auth-box">
-        <h2 class="brand" style="justify-content: center;">Łomża Roleplay</h2>
+        <h2 class="brand" style="justify-content: center;">OMNI-OS</h2>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('login')">Logowanie</div>
@@ -31,13 +41,13 @@
         <div id="form-login" class="form-section active">
             <input type="text" id="l-user" class="login-input" placeholder="Login">
             <input type="password" id="l-pass" class="login-input" placeholder="Hasło">
-            <button class="login-btn" onclick="login()">ZALOGUJ SIĘ</button>
+            <button class="login-btn" onclick="login()">ZALOGUJ DO SYSTEMU</button>
         </div>
 
         <div id="form-register" class="form-section">
             <input type="text" id="r-user" class="login-input" placeholder="Wymyśl Login">
             <input type="password" id="r-pass" class="login-input" placeholder="Hasło">
-            <input type="text" id="r-code" class="login-input" placeholder="Kod zaproszenia">
+            <input type="text" id="r-code" class="login-input" placeholder="Kod zaproszenia / Roli">
             <button class="login-btn" onclick="register()">STWÓRZ KONTO</button>
         </div>
 
@@ -63,17 +73,6 @@
         async function register() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: document.getElementById('r-user').value, pass: document.getElementById('r-pass').value, roleCode: document.getElementById('r-code').value }) // FIXED JSON PAYLOAD
-            });
-            const data = await res.json();
-            showMessage(data.message, !data.success);
-            if(data.success) setTimeout(() => switchTab('login'), 2000);
-        }
-
-        // --- ZMODYFIKOWANA FUNKCJA WYKORZYSTUJĄCA WŁAŚCIWE NAZWY PÓL ---
-        async function register() {
-            const res = await fetch('/api/auth/register', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     username: document.getElementById('r-user').value, 
                     password: document.getElementById('r-pass').value, 
@@ -95,13 +94,19 @@
             });
             const data = await res.json();
             if (data.success) {
-                // Zapisujemy nowy Bezpieczny Token JWT
                 localStorage.setItem('omni_jwt', data.token);
                 localStorage.setItem('omni_user', JSON.stringify(data.user));
                 window.location.href = '/';
             } else {
                 showMessage(data.message, true);
             }
+        }
+
+        // --- SKRYPT APLIKACJI (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
         }
     </script>
 </body>
