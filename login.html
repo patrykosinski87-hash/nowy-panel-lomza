@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>txElite | Auth</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-body">
+    <div class="bg-gradient"></div>
+    <div class="auth-card">
+        <h1>txElite</h1>
+        <p>SECURE ACCESS SYSTEM</p>
+        
+        <input type="text" id="u" placeholder="NAZWA UŻYTKOWNIKA" autocomplete="off">
+        <input type="password" id="p" placeholder="HASŁO">
+        <input type="text" id="c" placeholder="KOD ZAPROSZENIA (LOMZA-ADMIN-2024)" style="display:none">
+        
+        <button class="btn-primary" onclick="auth()" id="btn-t">ZALOGUJ SIĘ</button>
+        <p onclick="toggle()" style="margin-top:20px; font-size:12px; cursor:pointer; color:#64748b;">Zmień tryb dostępu</p>
+        <div id="status" style="margin-top:20px; font-weight:800; font-size:13px;"></div>
+    </div>
+
+    <script>
+        let isL = true;
+        function toggle() { isL = !isL; document.getElementById('c').style.display = isL ? 'none':'block'; document.getElementById('btn-t').innerText = isL ? 'ZALOGUJ SIĘ' : 'STWÓRZ KONTO'; }
+        async function auth() {
+            const status = document.getElementById('status');
+            status.innerText = "Łączenie...";
+            const res = await fetch('/api/' + (isL ? 'login' : 'register'), {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({username: u.value, password: p.value, code: c.value})
+            });
+            const d = await res.json();
+            if(res.ok) window.location.href = 'index.html';
+            else { status.innerText = d.error; status.style.color = "#ef4444"; }
+        }
+    </script>
+</body>
+</html>
