@@ -17,12 +17,9 @@ const ROBLOX_API_KEY = "OMNI_ROBLOX_KEY_2024";
 // ==========================================
 // 🛠️ KONFIGURACJA DISCORD WEBHOOKÓW 🛠️
 // ==========================================
-const WEBHOOK_BANS = "https://discord.com/api/webhooks/1509231315591893103/TJyJMf4b4tDD4prdNZXu6B0aijLbEA503Ek3fVyrnv0mJTaLfDlQ5F8jONLoZTrs5Sz5";
-const WEBHOOK_AUDIT = "https://discord.com/api/webhooks/1509231524443324517/9x-dT7uK76oF2CF3JOXZVF2f6ZFhML2A8dpYbAvz5ous44pqH7RX2ig631dRj7Sxiqfp";
-
-// ID Roli lub Użytkownika do PINGOWANIA przy banie (opcjonalnie)
-// Jak zostawisz puste "", to wyśle samą ramkę bez pingu nad nią.
-const PING_ID = "<@&TUTAJ_ID_ROLI>"; 
+// Wklej tu swoje linki z ustawień kanałów na Discordzie!
+const WEBHOOK_BANS = "https://discord.com/api/webhooks/1509231524443324517/9x-dT7uK76oF2CF3JOXZVF2f6ZFhML2A8dpYbAvz5ous44pqH7RX2ig631dRj7Sxiqfp";
+const WEBHOOK_AUDIT = "https://discord.com/api/webhooks/1509231315591893103/TJyJMf4b4tDD4prdNZXu6B0aijLbEA503Ek3fVyrnv0mJTaLfDlQ5F8jONLoZTrs5Sz5";
 
 // Funkcja wysyłająca klasyczne logi (Audit)
 async function sendDiscordLog(webhookUrl, embed) {
@@ -136,26 +133,18 @@ app.post('/api/servers/action', authenticate, (req, res) => {
         db.run("INSERT OR REPLACE INTO active_bans (username, reason, duration, admin) VALUES (?, ?, ?, ?)", [target, reason, duration, req.user.username]);
         db.run("INSERT INTO punishments (admin, player, type, reason, duration) VALUES (?, ?, ?, ?, ?)", [req.user.username, target, type, reason, duration]);
         
-        // ========================================================
-        // 🔴 IDEALNE ODWZOROWANIE DISCORD LOGA (1:1 Z OBRAZKIEM)
-        // ========================================================
-        
-        // Formatuje gramatykę tak jak na screenie
+        // Zmiana gramatyki dla Polskiego języka
         const durationText = (duration === "Permanentny") ? "permanentnie" : `na ${duration}`;
 
+        // CZYSTA RAMKA BANA (Bez pingu u góry i bez zepsutego obrazka)
         const banPayload = {
-            content: PING_ID, // Wyrzuca ping nad ramką, tak jak na screenie @typeczek2202
             embeds: [{
                 title: "🔐 Zbanowano Gracza",
-                color: 3447003, // Ten sam błękitny z obrazka
-                description: `Zbanowany gracz nie może grać do czasu upłynięcia blokady.\nGracz **${target}** został zablokowany ${durationText}.\n\n**Powód** ${reason}\n\nZbanowano przez ${req.user.username}`,
-                thumbnail: {
-                    url: "https://i.imgur.com/gK9R5G0.png" // Czerwone logo Discorda, wprost ze screena
-                }
+                color: 3447003, // Niebieski (taki jak na screenie)
+                description: `Zbanowany gracz nie może grać do czasu upłynięcia blokady.\nGracz **${target}** został zablokowany ${durationText}.\n\n**Powód** ${reason}\n\nZbanowano przez ${req.user.username}`
             }]
         };
 
-        // Wysyłamy specyficznie sformatowany Payload prosto do webhooka banów
         if(WEBHOOK_BANS && !WEBHOOK_BANS.includes("TUTAJ_WKLEJ")) {
             fetch(WEBHOOK_BANS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(banPayload) }).catch(err => console.error(err));
         }
