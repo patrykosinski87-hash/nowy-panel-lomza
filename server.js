@@ -73,7 +73,7 @@ async function fetchRobloxUserData(input) {
 // ==========================================
 app.post('/api/auth/register', async (req, res) => {
     const { username, password, roleCode } = req.body;
-    const codes = { 'A7K2M8QX': { role: 'Owner', level: 5 }, '9BZ4L2WP': { role: 'Zarząd', level: 4 }, 'X5N8C3RA': { role: 'Admin', level: 3 }, 'M8Y4P1ZX': { role: 'Moderator', level: 2 }, 'T2Q7V9KD': { role: 'Pomocnik', level: 1 } };
+    const codes = { 'A7K2M8QX': { role: 'Założyciel', level: 5 }, '9BZ4L2WP': { role: 'Zarząd Administracji', level: 4 }, 'X5N8C3RA': { role: 'Administrator', level: 3 }, 'M8Y4P1ZX': { role: 'Moderator', level: 2 }, 'T2Q7V9KD': { role: 'Pomocnik', level: 1 } };
     const roleData = codes[roleCode];
     if (!roleData) return res.status(400).json({ success: false, message: "Zły kod zaproszenia!" });
     
