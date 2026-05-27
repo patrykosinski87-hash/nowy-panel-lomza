@@ -2,62 +2,74 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMNI-OS | Enterprise Admin Panel</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Biblioteka do wykresów -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- MAGIA WEBSOCKETÓW: Ta linijka łączy panel z serwerem na żywo -->
+    <!-- Biblioteka WebSockets -->
     <script src="/socket.io/socket.io.js"></script>
 
     <style>
+        /* Ukrywanie/Pokazywanie widoków zakładek */
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* STYLE DLA POWIADOMIEŃ TOAST (Nie potrzebujesz dodatkowych plików CSS/JS) */
+        /* Styl dla systemu powiadomień Toast */
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); color: white; padding: 15px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; }
         .toast.show { transform: translateX(0); }
         .toast-warning { border-left: 4px solid #f59e0b; }
         .toast-error { border-left: 4px solid #ef4444; }
+        .toast-success { border-left: 4px solid #22c55e; }
+        .toast-info { border-left: 4px solid #3b82f6; }
+
+        /* Styl dla akcji w profilu gracza */
+        .action-btn { background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .action-btn:hover { opacity: 0.8; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
+    <!-- PASEK BOCZNY (NAWIGACJA) -->
     <aside class="sidebar">
         <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS Enterprise</div>
         
-        <div style="margin-bottom: 30px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+        <!-- Informacje o sesji -->
+        <div style="margin-bottom: 30px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid var(--border-color);">
             <div style="font-size: 12px; color: var(--text-muted)">Zalogowano jako:</div>
-            <div id="ui-username" style="font-weight: bold; color: white;">...</div>
-            <div id="ui-role" style="font-size: 12px; color: var(--accent-purple); margin-top: 5px;">...</div>
+            <div id="ui-username" style="font-weight: bold; color: white; margin-top: 3px;">...</div>
+            <div id="ui-role" style="font-size: 12px; color: var(--accent-purple); margin-top: 5px; font-weight: 600;">...</div>
         </div>
 
         <ul class="nav-menu">
             <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard Live</li>
-            <li class="nav-item" data-target="wip-view"><i class="fa-solid fa-users"></i> Baza Graczy</li>
+            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Baza Graczy</li>
             <li class="nav-item" data-target="wip-view"><i class="fa-solid fa-shield-halved"></i> Anti-Cheat Panel</li>
             <li class="nav-item" onclick="logout()"><i class="fa-solid fa-power-off" style="color: var(--danger)"></i> Wyloguj</li>
         </ul>
     </aside>
 
+    <!-- GŁÓWNA ZAWARTOŚĆ -->
     <main class="main-content">
-        <!-- DASHBOARD (Real-Time) -->
+        
+        <!-- WIDOK 1: DASHBOARD (Real-Time) -->
         <div id="dashboard-view" class="view-section active">
             
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
                 <h2 style="color: white;">Live Telemetry</h2>
-                <div style="color: var(--success); font-size: 14px; display: flex; align-items: center; gap: 10px;">
+                <div style="color: var(--success); font-size: 14px; display: flex; align-items: center; gap: 10px; background: rgba(34, 197, 94, 0.1); padding: 5px 15px; border-radius: 20px;">
                     <span class="pulse-status"></span> Socket Connected
                 </div>
             </div>
 
+            <!-- Karty statystyk -->
             <div class="grid-stats">
                 <div class="stat-card">
                     <div class="stat-title">Gracze Online (Live)</div>
-                    <!-- Te wartości będą się zmieniać na żywo bez odświeżania! -->
                     <div class="stat-value" id="val-online">Łączenie...</div> 
                 </div>
                 <div class="stat-card">
@@ -66,37 +78,97 @@
                 </div>
             </div>
 
+            <!-- Wykres i Logi -->
             <div class="chart-container" style="display: flex; gap: 20px;">
                 <div style="flex: 2;">
                     <h3 style="color: var(--text-muted); margin-bottom: 20px;">Wykres Aktywności</h3>
                     <canvas id="activityChart"></canvas>
                 </div>
-                <!-- Mini okienko na Live Feed z powiadomień -->
                 <div style="flex: 1; border-left: 1px solid var(--border-color); padding-left: 20px;">
                     <h3 style="color: var(--text-muted); margin-bottom: 20px;">System Alerts (Live)</h3>
                     <div id="live-feed" style="overflow-y: auto; height: 300px; display: flex; flex-direction: column; gap: 10px;">
-                        <span style="color: var(--text-muted); font-size: 12px;">Nasłuchiwanie zdarzeń...</span>
+                        <span style="color: var(--text-muted); font-size: 12px;">Nasłuchiwanie zdarzeń z gniazda...</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="wip-view" class="view-section">
-            <h1 style="color: white; margin-top: 100px; text-align: center;">Wybierz moduł do wdrożenia!</h1>
+        <!-- WIDOK 2: ZARZĄDZANIE GRACZAMI -->
+        <div id="players-view" class="view-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+                <h2 style="color: white;">Baza Graczy & Moderacja</h2>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="search-player-input" class="search-bar" placeholder="Wpisz nick gracza..." style="width: 300px; background: rgba(0,0,0,0.5);">
+                    <button onclick="searchPlayer()" class="action-btn" style="background: var(--accent-blue); padding: 10px 20px;"><i class="fa-solid fa-magnifying-glass"></i> Szukaj</button>
+                </div>
+            </div>
+
+            <!-- KARTA PROFILU (Pokazuje się po wyszukaniu) -->
+            <div id="player-profile-card" class="chart-container" style="display: none; position: relative;">
+                <div style="display: flex; gap: 30px; align-items: flex-start;">
+                    
+                    <img id="p-avatar" src="https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/150/150/AvatarHeadshot/Png" style="border-radius: 10px; border: 2px solid var(--border-color); width: 150px; height: 150px;">
+                    
+                    <div style="flex: 1;">
+                        <h2 id="p-username" style="color: white; font-size: 28px; margin-bottom: 5px;">Username</h2>
+                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Roblox ID: <span id="p-id" style="color: white;">1234567</span></p>
+                        
+                        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                            <div style="background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Stan Konta</div>
+                                <div id="p-currency" style="color: #22c55e; font-weight: bold; font-size: 18px;">$0</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Exploit Score</div>
+                                <div id="p-exploit" style="color: #ef4444; font-weight: bold; font-size: 18px;">0/100</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Status Ban</div>
+                                <div id="p-banned" style="color: white; font-weight: bold; font-size: 18px;">CZYSTY</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Boczny Akcji -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; width: 220px;">
+                        <button onclick="executePunishment('KICK')" class="action-btn" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; padding: 12px;"><i class="fa-solid fa-person-walking-arrow-right"></i> Kick z serwera</button>
+                        <button onclick="executePunishment('BAN')" class="action-btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); padding: 12px;"><i class="fa-solid fa-gavel"></i> Zbanuj Gracza</button>
+                        <button onclick="wipeData()" class="action-btn" style="background: rgba(139, 92, 246, 0.2); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 12px;"><i class="fa-solid fa-eraser"></i> Wipe Inventory</button>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- WIDOK: WIP (Work in Progress) -->
+        <div id="wip-view" class="view-section">
+            <div class="chart-container" style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-code" style="font-size: 40px; color: var(--text-muted); margin-bottom: 20px;"></i>
+                    <h2 style="color: white; margin-bottom: 10px;">Moduł w budowie</h2>
+                    <p style="color: var(--text-muted);">Ten element systemu OMNI-OS zostanie wdrożony w kolejnej aktualizacji.</p>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <!-- KONTENER NA TOASTY -->
+    <!-- KONTENER NA POWIADOMIENIA TOAST (Musi tu być!) -->
     <div id="toast-container"></div>
 
     <script>
-        // 1. Zabezpieczenie JWT
+        // ==========================================
+        // 1. ZABEZPIECZENIE I INICJALIZACJA SESJI
+        // ==========================================
         const token = localStorage.getItem('omni_jwt');
         const user = JSON.parse(localStorage.getItem('omni_user'));
-        if (!token || !user) window.location.href = '/login.html';
-
-        document.getElementById('ui-username').innerText = user.username;
-        document.getElementById('ui-role').innerText = user.role;
+        
+        if (!token || !user) {
+            window.location.href = '/login.html'; // Wyrzuć niezalogowanych!
+        } else {
+            // Jeśli zalogowany, załaduj jego dane do paska po lewej
+            document.getElementById('ui-username').innerText = user.username;
+            document.getElementById('ui-role').innerText = user.role;
+        }
 
         function logout() {
             localStorage.removeItem('omni_jwt');
@@ -104,38 +176,130 @@
             window.location.href = '/login.html';
         }
 
-        // 2. Przełączanie kart (Zakładki)
+        // ==========================================
+        // 2. SYSTEM POWIADOMIEŃ (TOAST)
+        // ==========================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            // Wybór ikony na podstawie typu
+            let icon = 'fa-bell';
+            if(type === 'error') icon = 'fa-circle-xmark';
+            if(type === 'warning') icon = 'fa-triangle-exclamation';
+            if(type === 'success') icon = 'fa-circle-check';
+
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400); // Usuń element z HTML po animacji
+            }, 5000);
+        }
+
+        // ==========================================
+        // 3. NAWIGACJA ZAKŁADEK
+        // ==========================================
         document.querySelectorAll('.nav-item[data-target]').forEach(item => {
             item.addEventListener('click', function() {
+                // Zmień aktywny guzik menu
                 document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
                 this.classList.add('active');
+                
+                // Zmień widoczną sekcję
                 document.querySelectorAll('.view-section').forEach(view => {
                     view.classList.remove('active');
                     view.style.display = 'none';
                 });
                 const targetView = document.getElementById(this.getAttribute('data-target'));
                 targetView.style.display = 'block';
-                void targetView.offsetWidth; 
+                void targetView.offsetWidth; // Wymuszenie odświeżenia CSS dla animacji
                 targetView.classList.add('active');
             });
         });
 
-        // 3. System Powiadomień (Toast)
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 50);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 400);
-            }, 5000);
+        // ==========================================
+        // 4. LOGIKA: WYSZUKIWARKA I PROFIL GRACZA
+        // ==========================================
+        let currentPlayer = null;
+
+        async function searchPlayer() {
+            const input = document.getElementById('search-player-input').value;
+            if(!input) return showToast("Wpisz nick gracza!", "warning");
+
+            try {
+                // Pytamy nasz własny serwer o gracza, wysyłając token bezpieczeństwa JWT
+                const response = await fetch(`/api/players/search/${input}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if(data.success) {
+                    currentPlayer = data.data.username;
+                    
+                    // Wypełnianie UI danymi z bazy SQL
+                    document.getElementById('p-username').innerText = data.data.username;
+                    document.getElementById('p-id').innerText = data.data.roblox_id;
+                    document.getElementById('p-currency').innerText = "$" + data.data.currency.toLocaleString();
+                    document.getElementById('p-exploit').innerText = data.data.exploit_score + "/100";
+                    
+                    // Pokolorowanie statusu bana
+                    const banStatus = document.getElementById('p-banned');
+                    if(data.data.is_banned) {
+                        banStatus.innerText = "ZBANOWANY";
+                        banStatus.style.color = "var(--danger)";
+                    } else {
+                        banStatus.innerText = "CZYSTY";
+                        banStatus.style.color = "var(--success)";
+                    }
+
+                    document.getElementById('player-profile-card').style.display = "block";
+                    showToast("Pobrano profil gracza.", "success");
+                } else {
+                    showToast(data.message, "error");
+                }
+            } catch (err) {
+                showToast("Błąd połączenia z bazą danych API.", "error");
+            }
         }
 
-        // 4. Inicjalizacja Wykresu Chart.js
+        async function executePunishment(type) {
+            if(!currentPlayer) return;
+            const reason = prompt(`Podaj powód dla akcji [${type}] na graczu ${currentPlayer}:`);
+            if(!reason) return;
+
+            try {
+                const response = await fetch('/api/players/action', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Tylko zalogowani admini!
+                    },
+                    body: JSON.stringify({ targetUsername: currentPlayer, actionType: type, reason: reason })
+                });
+                const data = await response.json();
+                
+                if(data.success) {
+                    showToast(data.message, "success");
+                    searchPlayer(); // Odśwież widok profilu po ukaraniu
+                } else {
+                    showToast(data.message, "error");
+                }
+            } catch (err) {
+                showToast("Błąd serwera. Akcja nie powiodła się.", "error");
+            }
+        }
+
+        function wipeData() {
+            showToast("Brak uprawnień. Akcja Wipe jest dostępna tylko dla ról [Owner, Head Admin].", "warning");
+        }
+
+        // ==========================================
+        // 5. INICJALIZACJA WYKRESÓW (Chart.js)
+        // ==========================================
         let myChart;
         function initChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
@@ -145,7 +309,7 @@
                     labels: ['', '', '', '', '', '', 'Teraz'],
                     datasets: [{
                         label: 'Gracze Online',
-                        data: [15000, 15000, 15000, 15000, 15000, 15000, 15000], // Startowe dane
+                        data: [15000, 15000, 15000, 15000, 15000, 15000, 15000],
                         borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0
                     }]
                 },
@@ -153,38 +317,43 @@
             });
         }
 
-        // 5. POŁĄCZENIE WEBSOCKET (REAL-TIME!)
-        // To łączy się bezpośrednio z serwerem i czeka na zdarzenia
+        // ==========================================
+        // 6. POŁĄCZENIE WEBSOCKET (Live Data)
+        // ==========================================
         const socket = io();
 
+        // Nasłuchiwanie telemetrii z serwera
         socket.on('live_stats', (data) => {
-            // Natychmiastowa aktualizacja liczb
             document.getElementById('val-online').innerText = data.playersOnline.toLocaleString();
             document.getElementById('val-tps').innerText = data.tps;
 
-            // Płynna aktualizacja wykresu na żywo!
             if (myChart) {
-                myChart.data.datasets[0].data.shift(); // Usuwa najstarszy punkt
-                myChart.data.datasets[0].data.push(data.playersOnline); // Dodaje nowy
+                myChart.data.datasets[0].data.shift(); 
+                myChart.data.datasets[0].data.push(data.playersOnline); 
                 myChart.update();
             }
         });
 
+        // Nasłuchiwanie alertów (np. gdy inny admin kogoś zbanuje!)
         socket.on('system_alert', (alert) => {
-            // Pokaż popup w rogu ekranu
             showToast(alert.message, alert.type);
 
-            // Dodaj log do okienka Live Feed
             const feed = document.getElementById('live-feed');
             const time = new Date().toLocaleTimeString();
+            
+            // Kolor ramki zależy od tego czy to ban czy ostrzeżenie
+            const borderCol = alert.type === 'error' ? 'var(--danger)' : '#f59e0b';
+            const bgCol = alert.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+
             feed.innerHTML = `
-                <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); padding: 10px; border-radius: 4px; font-size: 13px; color: white;">
-                    <span style="color: var(--text-muted); font-size: 11px;">${time}</span><br>
+                <div style="background: ${bgCol}; border-left: 3px solid ${borderCol}; padding: 10px; border-radius: 4px; font-size: 13px; color: white; animation: fadeIn 0.5s;">
+                    <span style="color: var(--text-muted); font-size: 11px;">[${time}] System</span><br>
                     ${alert.message}
                 </div>
-            ` + feed.innerHTML; // Wstawiamy na samą górę
+            ` + feed.innerHTML; 
         });
 
+        // Start aplikacji po załadowaniu okna
         window.onload = () => {
             initChart();
         };
