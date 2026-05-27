@@ -4,152 +4,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMNI-OS | Roblox Admin Panel</title>
-    <!-- Zwróć uwagę na poprawną ścieżkę do CSS -->
     <link rel="stylesheet" href="/css/style.css">
-    <!-- Czcionka Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Ikony -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Biblioteka do wykresów -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Ukrywanie zakładek */
+        .view-section { display: none; }
+        .view-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
 
-    <!-- SIDEBAR NAWIGACYJNY -->
     <aside class="sidebar">
-        <div class="brand">
-            <i class="fa-solid fa-cube"></i> OMNI-OS v5
-        </div>
+        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS v5</div>
         <ul class="nav-menu">
-            <li class="nav-item active"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-            <li class="nav-item"><i class="fa-solid fa-users"></i> Gracze</li>
-            <li class="nav-item"><i class="fa-solid fa-server"></i> Serwery (Live)</li>
-            <li class="nav-item"><i class="fa-solid fa-gavel"></i> Moderacja</li>
-            <li class="nav-item"><i class="fa-solid fa-shield-halved"></i> Anti-Cheat</li>
-            <li class="nav-item"><i class="fa-solid fa-coins"></i> Ekonomia</li>
-            <li class="nav-item"><i class="fa-solid fa-user-tie"></i> Role i Dostępy</li>
-            <li class="nav-item"><i class="fa-solid fa-code"></i> Dev Tools</li>
-            <li class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</li>
+            <!-- DODANO atrybut data-target, który mówi skryptowi, jaki widok pokazać -->
+            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
+            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze</li>
+            <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery (Live)</li>
+            <li class="nav-item" data-target="empty-view"><i class="fa-solid fa-shield-halved"></i> Anti-Cheat</li>
+            <li class="nav-item" onclick="logout()"><i class="fa-solid fa-power-off" style="color: var(--danger)"></i> Wyloguj</li>
         </ul>
     </aside>
 
-    <!-- GŁÓWNA ZAWARTOŚĆ -->
     <main class="main-content">
         <header>
             <div>
                 <h2>Witaj ponownie, Admin</h2>
                 <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">
-                    <span class="pulse-status"></span> Systems Integrated. Engine: LOMZA-V5
+                    <span class="pulse-status"></span> Systems Integrated.
                 </p>
             </div>
             <div>
-                <input type="text" class="search-bar" placeholder="Szukaj gracza (Ctrl+K)...">
+                <input type="text" class="search-bar" placeholder="Szukaj (Ctrl+K)...">
             </div>
         </header>
 
-        <!-- DASHBOARD VIEW -->
-        <div id="dashboard-view">
-            <!-- Karty Statystyk -->
+        <!-- WIDOK 1: DASHBOARD -->
+        <div id="dashboard-view" class="view-section active">
             <div class="grid-stats">
                 <div class="stat-card">
                     <div class="stat-title">Aktywni Gracze</div>
-                    <div class="stat-value" id="val-players">Ładowanie...</div>
+                    <div class="stat-value" id="val-players">...</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Przychód (24H)</div>
-                    <div class="stat-value" id="val-revenue">Ładowanie...</div>
+                    <div class="stat-value" id="val-revenue">...</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Network TPS</div>
-                    <div class="stat-value" id="val-tps">Ładowanie...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">Poziom Zagrożenia</div>
-                    <div class="stat-value" id="val-threat" style="color: var(--success);">Ładowanie...</div>
+                    <div class="stat-value" id="val-tps">...</div>
                 </div>
             </div>
-
-            <!-- Wykres Aktywności -->
             <div class="chart-container">
-                <h3 style="margin-bottom: 20px; color: var(--text-muted);">Aktywność Graczy (Live)</h3>
                 <canvas id="activityChart"></canvas>
             </div>
         </div>
+
+        <!-- WIDOK 2: ZARZĄDZANIE GRACZAMI -->
+        <div id="players-view" class="view-section">
+            <div class="chart-container">
+                <h3 style="color: var(--accent-blue); margin-bottom: 20px;">Baza Graczy</h3>
+                <p>Tutaj będzie zaawansowana tabela z listą graczy, banowaniem i podglądem ekwipunku.</p>
+                <button class="login-btn" style="width: auto; padding: 10px 20px; margin-top: 20px;">+ Zbanuj Gracza (WIP)</button>
+            </div>
+        </div>
+
+        <!-- WIDOK 3: SERWERY -->
+        <div id="servers-view" class="view-section">
+            <div class="chart-container">
+                <h3 style="color: var(--accent-purple); margin-bottom: 20px;">Live Server Control</h3>
+                <p>Lista instancji serwerów, memory usage, shutdown button itp.</p>
+            </div>
+        </div>
+        
+        <!-- PUSTY WIDOK DLA RESZTY ZAKŁADEK -->
+        <div id="empty-view" class="view-section">
+            <div class="chart-container" style="display: flex; align-items: center; justify-content: center;">
+                <h2 style="color: var(--text-muted);">Ta sekcja jest w budowie...</h2>
+            </div>
+        </div>
+
     </main>
 
-    <!-- SKRYPT PANELU -->
     <script>
-        // 1. Pobieranie danych z naprawionego API
+        // 1. ZABEZPIECZENIE: Sprawdzamy czy użytkownik się zalogował
+        if (!localStorage.getItem('omni_token')) {
+            window.location.href = '/login.html';
+        }
+
+        // 2. FUNKCJA WYLOGOWANIA
+        function logout() {
+            localStorage.removeItem('omni_token');
+            window.location.href = '/login.html';
+        }
+
+        // 3. OBSŁUGA ZAKŁADEK MENU
+        const navItems = document.querySelectorAll('.nav-item[data-target]');
+        const views = document.querySelectorAll('.view-section');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                // Usuń klasę active ze wszystkich przycisków i dodaj do klikniętego
+                navItems.forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+
+                // Ukryj wszystkie widoki
+                views.forEach(view => {
+                    view.classList.remove('active');
+                    // Małe opóźnienie dla płynnej animacji (ustawione w CSS)
+                    setTimeout(() => view.style.display = 'none', 50);
+                });
+
+                // Pokaż odpowiedni widok
+                const targetId = this.getAttribute('data-target');
+                setTimeout(() => {
+                    const targetView = document.getElementById(targetId);
+                    targetView.style.display = 'block';
+                    // Wymuszamy reflow dla animacji CSS
+                    void targetView.offsetWidth; 
+                    targetView.classList.add('active');
+                }, 50);
+            });
+        });
+
+        // KOD POBIERANIA DANYCH Z POPRZEDNIEJ WIADOMOŚCI
         async function fetchSystemData() {
             try {
-                // To zapytanie wreszcie zadziała i nie zwróci błędu w konsoli!
                 const response = await fetch('/api/check'); 
                 const data = await response.json();
-                
                 if(data.status === "success") {
                     document.getElementById('val-players').innerText = data.data.playersOnline.toLocaleString();
                     document.getElementById('val-revenue').innerText = data.data.revenue;
                     document.getElementById('val-tps').innerText = data.data.tps;
-                    document.getElementById('val-threat').innerText = data.data.threatLevel;
                 }
-            } catch (error) {
-                console.error("Błąd API:", error);
-                document.getElementById('val-players').innerText = "Błąd połączenia";
-            }
+            } catch (error) {}
         }
 
-        // 2. Inicjalizacja pięknego wykresu Chart.js (SaaS style)
         function initChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
-            
-            // Gradient dla wykresu
             let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)'); // fiolet
+            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)'); 
             gradient.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
-
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', 'Teraz'],
                     datasets: [{
-                        label: 'Gracze Online',
-                        data: [800, 950, 1100, 1050, 1300, 1500, 1642],
-                        borderColor: '#8b5cf6',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.4, // Zaokrąglenie linii
-                        fill: true,
-                        pointBackgroundColor: '#09090b',
-                        pointBorderColor: '#8b5cf6',
-                        pointBorderWidth: 2
+                        label: 'Gracze Online', data: [800, 950, 1100, 1050, 1300, 1500, 1642],
+                        borderColor: '#8b5cf6', backgroundColor: gradient, borderWidth: 2, tension: 0.4, fill: true,
+                        pointBackgroundColor: '#09090b', pointBorderColor: '#8b5cf6', pointBorderWidth: 2
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#a1a1aa' }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#a1a1aa' }
-                        }
-                    }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#a1a1aa' } }, x: { grid: { display: false }, ticks: { color: '#a1a1aa' } } }
                 }
             });
         }
 
-        // Uruchomienie przy starcie
         window.onload = () => {
             fetchSystemData();
             initChart();
-            
-            // Symulacja aktualizacji live co 5 sekund
             setInterval(fetchSystemData, 5000);
         };
     </script>
