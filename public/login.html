@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { justify-content: center; align-items: center; }
+        body { justify-content: center; align-items: center; position: relative; }
         .auth-box { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 15px 20px 30px rgba(0,0,0,0.6); }
         .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .tab { flex: 1; padding: 10px; cursor: pointer; color: var(--text-muted); transition: 0.3s; }
@@ -29,18 +29,43 @@
         .form-section.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* Specjalny przycisk instalacji (Domyślnie ukryty) */
-        #install-btn {
-            background: linear-gradient(180deg, var(--success), #14532d);
-            box-shadow: 0 6px 0 #052e16, 0 10px 20px rgba(0,0,0,0.6);
-            display: none; 
-            margin-top: 30px;
-            font-size: 16px;
+        /* PRZYCISK POBIERANIA W PRAWYM GÓRNYM ROGU */
+        .download-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 1000;
         }
-        #install-btn:active { box-shadow: 0 0 0 #052e16, 0 2px 5px rgba(0,0,0,0.6); }
+        .download-btn:hover {
+            background: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.8);
+        }
+        .download-btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
+
+    <!-- WIDOCZNY ZAWSZE PRZYCISK POBIERANIA -->
+    <button id="manual-install-btn" class="download-btn">
+        <i class="fa-solid fa-download"></i> POBIERZ APLIKACJĘ
+    </button>
+
     <div class="auth-box">
         <h2 class="brand" style="justify-content: center;">OMNI-OS</h2>
         
@@ -63,11 +88,6 @@
         </div>
 
         <p id="msg" class="msg"></p>
-
-        <!-- PRZYCISK POBIERANIA APLIKACJI -->
-        <button id="install-btn" class="login-btn">
-            <i class="fa-solid fa-download"></i> ZAINSTALUJ APLIKACJĘ OMNI-OS
-        </button>
     </div>
 
     <script>
@@ -119,26 +139,28 @@
         }
 
         let deferredPrompt;
-        const installBtn = document.getElementById('install-btn');
+        const installBtn = document.getElementById('manual-install-btn');
 
-        // Przeglądarka wykryła, że to aplikacja i blokuje domyślne powiadomienie,
-        // zamiast tego my pokazujemy nasz wielki przycisk.
+        // Przechwytujemy zdarzenie instalacji (jeśli przeglądarka na to pozwala)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.style.display = 'block'; // Pokaż przycisk!
         });
 
-        // Co się stanie, jak ktoś kliknie nasz przycisk
+        // Obsługa kliknięcia w nasz nowy przycisk
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
+                // Przeglądarka wspiera instalację z przycisku -> Odpalamy!
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    console.log('Użytkownik zainstalował aplikację');
-                    installBtn.style.display = 'none'; // Schowaj po zainstalowaniu
+                    console.log('Zainstalowano pomyślnie!');
                 }
                 deferredPrompt = null;
+            } else {
+                // Przeglądarka (np. iPhone Safari lub ktoś, kto ma to już pobrane) blokuje prompta.
+                // Wyświetlamy grzeczną instrukcję!
+                alert("Nie możemy zainstalować aplikacji automatycznie.\n\nJAK TO ZROBIĆ RĘCZNIE:\n\n1. Komputer (Chrome/Edge): Zwróć uwagę na małą ikonkę komputera ze strzałką w pasku linku (na samej górze po prawej) i kliknij ją.\n\n2. Telefon (Android): Kliknij 3 kropki w prawym górnym rogu -> 'Dodaj do ekranu głównego'.\n\n3. iPhone (iOS): Kliknij ikonę udostępniania (kwadrat ze strzałką) -> 'Do ekranu głównego'.");
             }
         });
     </script>
