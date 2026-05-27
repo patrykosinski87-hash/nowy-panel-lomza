@@ -8,7 +8,7 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server); // Uruchamiamy WebSockety na serwerze
+const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = "Omni_Ultra_Secret_Key_2024!";
@@ -16,74 +16,94 @@ const JWT_SECRET = "Omni_Ultra_Secret_Key_2024!";
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Baza danych (Role i Szyfrowanie)
 const db = new sqlite3.Database('./enterprise.db');
+
+// --- ZAAWANSOWANA STRUKTURA BAZY DANYCH ---
 db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, role TEXT
-    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, role TEXT, level INTEGER)`);
+    db.run(`CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_name TEXT, action TEXT, target TEXT, details TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    // Symulacja bazy danych graczy z gry Roblox
+    db.run(`CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, roblox_id TEXT, username TEXT, currency INTEGER, exploit_score INTEGER, is_banned BOOLEAN DEFAULT 0)`);
+    db.run(`CREATE TABLE IF NOT EXISTS punishments (id INTEGER PRIMARY KEY AUTOINCREMENT, admin TEXT, player TEXT, type TEXT, reason TEXT, date DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 });
 
-// Rejestracja
-app.post('/api/auth/register', async (req, res) => {
-    const { username, password, roleCode } = req.body;
-    
-    // Kody ról z Twojego poprzedniego polecenia
-    const codes = {
-        'A7K2M8QX': 'Owner', '9BZ4L2WP': 'Zarząd', 'X5N8C3RA': 'Admin', 
-        'M8Y4P1ZX': 'Moderator', 'T2Q7V9KD': 'Pomocnik'
-    };
-    
-    if (!codes[roleCode]) return res.status(400).json({ success: false, message: "Zły kod roli!" });
-
-    // Szyfrowanie hasła (nie do złamania)
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
-        [username, hashedPassword, codes[roleCode]], function(err) {
-        if (err) return res.status(400).json({ success: false, message: "Login zajęty!" });
-        res.json({ success: true, message: "Konto utworzone. Zaloguj się!" });
+// Middleware Autoryzacji
+const authenticate = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: "Brak dostępu" });
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ success: false, message: "Sesja wygasła" });
+        req.user = user; next();
     });
-});
+};
 
-// Logowanie
+// Autoryzacja i Logowanie (Z Twojego poprzedniego kodu)
+app.post('/api/auth/register', async (req, res) => { /* ... kod z poprzedniej wiadomosci ... */ });
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
-
     db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ success: false, message: "Błędne dane logowania" });
-        }
-        // Generujemy bezpieczny token na 24h
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ success: false, message: "Błędne dane" });
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role, level: user.level }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ success: true, token, user: { username: user.username, role: user.role } });
     });
 });
 
-// SYSTEM LIVE (WebSockets)
-io.on('connection', (socket) => {
-    console.log('Nowy admin połączony z panelem');
+// ==========================================
+// MODUŁ 1: ZARZĄDZANIE GRACZAMI
+// ==========================================
 
-    // Wypycha dane na żywo do panelu co 2 sekundy (Tylko dla pokazania działania systemu)
-    const liveStats = setInterval(() => {
-        socket.emit('live_stats', {
-            playersOnline: Math.floor(Math.random() * 2000) + 15000,
-            tps: (59 + Math.random()).toFixed(1)
-        });
-    }, 2000);
-
-    // Losowe alerty z Anti-Cheata na żywo co kilka sekund
-    const alerts = setInterval(() => {
-        if(Math.random() > 0.6) {
-            socket.emit('system_alert', { message: `Wykryto anomalię ruchu u gracza (ID: ${Math.floor(Math.random()*9999)})`, type: 'warning' });
+// 1. Wyszukiwarka Gracza
+app.get('/api/players/search/:username', authenticate, (req, res) => {
+    const target = req.params.username;
+    
+    // W prawdziwym środowisku tu byłby strzał do API Robloxa. My symulujemy bazę.
+    db.get("SELECT * FROM players WHERE username LIKE ?", [`%${target}%`], (err, player) => {
+        if (player) {
+            res.json({ success: true, data: player });
+        } else {
+            // Jeśli gracza nie ma w naszej bazie SQL, tworzymy mu "mock" profil dla testów
+            const mockPlayer = {
+                roblox_id: Math.floor(Math.random() * 999999999),
+                username: target,
+                currency: Math.floor(Math.random() * 50000),
+                exploit_score: Math.floor(Math.random() * 100),
+                is_banned: 0
+            };
+            db.run("INSERT INTO players (roblox_id, username, currency, exploit_score) VALUES (?, ?, ?, ?)", [mockPlayer.roblox_id, mockPlayer.username, mockPlayer.currency, mockPlayer.exploit_score]);
+            res.json({ success: true, data: mockPlayer });
         }
-    }, 8000);
-
-    socket.on('disconnect', () => {
-        clearInterval(liveStats);
-        clearInterval(alerts);
     });
 });
 
+// 2. Akcje Moderatorskie (Ban, Kick)
+app.post('/api/players/action', authenticate, (req, res) => {
+    const { targetUsername, actionType, reason } = req.body;
+    const adminName = req.user.username;
+
+    if(actionType === 'BAN') {
+        db.run("UPDATE players SET is_banned = 1 WHERE username = ?", [targetUsername]);
+    }
+
+    // Zapis do logów kar
+    db.run("INSERT INTO punishments (admin, player, type, reason) VALUES (?, ?, ?, ?)", [adminName, targetUsername, actionType, reason]);
+    
+    // Zapis do Audit Logu
+    db.run("INSERT INTO audit_logs (admin_name, action, target, details) VALUES (?, ?, ?, ?)", [adminName, actionType, targetUsername, reason]);
+
+    // MAGIA: Wysyłamy informację do wszystkich innych adminów na żywo!
+    io.emit('system_alert', { 
+        type: actionType === 'BAN' ? 'error' : 'warning', 
+        message: `Admin ${adminName} wykonał ${actionType} na graczu ${targetUsername}. Powód: ${reason}` 
+    });
+
+    res.json({ success: true, message: `Akcja ${actionType} wykonana pomyślnie.` });
+});
+
+// WebSockety
+io.on('connection', (socket) => {
+    // Live telemetria
+    setInterval(() => socket.emit('live_stats', { playersOnline: Math.floor(Math.random() * 2000) + 15000, tps: (59 + Math.random()).toFixed(1) }), 2000);
+});
+
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-server.listen(PORT, () => console.log(`🚀 OMNI-OS Enterprise Server (JWT/WS) na porcie ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Enterprise Server OMNI-OS (v8) na porcie ${PORT}`));
