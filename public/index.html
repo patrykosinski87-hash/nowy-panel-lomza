@@ -2,60 +2,60 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMNI-OS | Roblox Admin Panel</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Ukrywanie zakładek */
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Tabela dla staffu i banów */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .data-table th { color: var(--text-muted); font-size: 12px; text-transform: uppercase; }
+        .action-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px;}
+        .action-btn.red { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .action-btn.orange { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
-        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS v5</div>
+        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS v6</div>
+        
+        <div style="margin-bottom: 30px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+            <div style="font-size: 12px; color: var(--text-muted)">Zalogowano jako:</div>
+            <div id="ui-username" style="font-weight: bold; color: white;">...</div>
+            <div id="ui-role" style="font-size: 12px; color: var(--accent-purple); margin-top: 5px;">...</div>
+        </div>
+
         <ul class="nav-menu">
-            <!-- DODANO atrybut data-target, który mówi skryptowi, jaki widok pokazać -->
             <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze</li>
-            <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery (Live)</li>
-            <li class="nav-item" data-target="empty-view"><i class="fa-solid fa-shield-halved"></i> Anti-Cheat</li>
+            <li class="nav-item" data-target="bans-view"><i class="fa-solid fa-gavel"></i> Dziennik Banów</li>
+            <!-- Ta opcja będzie widoczna tylko dla Zarządu i Ownera (Level 4 i 5) -->
+            <li class="nav-item" id="menu-staff" data-target="staff-view" style="display: none;"><i class="fa-solid fa-user-tie"></i> Zarządzanie Ekipą</li>
             <li class="nav-item" onclick="logout()"><i class="fa-solid fa-power-off" style="color: var(--danger)"></i> Wyloguj</li>
         </ul>
     </aside>
 
     <main class="main-content">
-        <header>
-            <div>
-                <h2>Witaj ponownie, Admin</h2>
-                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">
-                    <span class="pulse-status"></span> Systems Integrated.
-                </p>
-            </div>
-            <div>
-                <input type="text" class="search-bar" placeholder="Szukaj (Ctrl+K)...">
-            </div>
-        </header>
-
-        <!-- WIDOK 1: DASHBOARD -->
+        <!-- DASHBOARD -->
         <div id="dashboard-view" class="view-section active">
             <div class="grid-stats">
                 <div class="stat-card">
-                    <div class="stat-title">Aktywni Gracze</div>
-                    <div class="stat-value" id="val-players">...</div>
+                    <div class="stat-title">Gracze Online</div>
+                    <div class="stat-value" id="val-online">...</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">Przychód (24H)</div>
-                    <div class="stat-value" id="val-revenue">...</div>
+                    <div class="stat-title">Wejścia (7 Dni)</div>
+                    <div class="stat-value" id="val-visits">...</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">Network TPS</div>
-                    <div class="stat-value" id="val-tps">...</div>
+                    <div class="stat-title">Nałożone Bany</div>
+                    <div class="stat-value" id="val-bans" style="color: var(--danger)">...</div>
                 </div>
             </div>
             <div class="chart-container">
@@ -63,111 +63,178 @@
             </div>
         </div>
 
-        <!-- WIDOK 2: ZARZĄDZANIE GRACZAMI -->
-        <div id="players-view" class="view-section">
-            <div class="chart-container">
-                <h3 style="color: var(--accent-blue); margin-bottom: 20px;">Baza Graczy</h3>
-                <p>Tutaj będzie zaawansowana tabela z listą graczy, banowaniem i podglądem ekwipunku.</p>
-                <button class="login-btn" style="width: auto; padding: 10px 20px; margin-top: 20px;">+ Zbanuj Gracza (WIP)</button>
+        <!-- DZIENNIK BANÓW -->
+        <div id="bans-view" class="view-section">
+            <div class="chart-container" style="height: auto; min-height: 500px;">
+                <h3 style="color: var(--danger);">Live Feed - Logi Kar</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th><th>Admin</th><th>Zbanowany Gracz</th><th>Powód</th><th>Czas trwania</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bans-table-body">
+                        <!-- Generowane przez JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- WIDOK 3: SERWERY -->
-        <div id="servers-view" class="view-section">
-            <div class="chart-container">
-                <h3 style="color: var(--accent-purple); margin-bottom: 20px;">Live Server Control</h3>
-                <p>Lista instancji serwerów, memory usage, shutdown button itp.</p>
+        <!-- ZARZĄDZANIE EKIPĄ (Tylko Owner / Zarząd) -->
+        <div id="staff-view" class="view-section">
+            <div class="chart-container" style="height: auto;">
+                <h3 style="color: var(--accent-purple);">Zarządzanie Administracją</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Możesz zarządzać kontami osób z rangą niższą od Twojej.</p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Login</th><th>Ranga</th><th>Status Resetu</th><th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staff-table-body">
+                        <!-- Generowane przez JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <!-- PUSTY WIDOK DLA RESZTY ZAKŁADEK -->
-        <div id="empty-view" class="view-section">
-            <div class="chart-container" style="display: flex; align-items: center; justify-content: center;">
-                <h2 style="color: var(--text-muted);">Ta sekcja jest w budowie...</h2>
-            </div>
-        </div>
-
     </main>
 
     <script>
-        // 1. ZABEZPIECZENIE: Sprawdzamy czy użytkownik się zalogował
-        if (!localStorage.getItem('omni_token')) {
-            window.location.href = '/login.html';
+        // --- WERYFIKACJA SESJI I ZARZĄDZANIE UI ---
+        const loggedUser = JSON.parse(localStorage.getItem('omni_user'));
+        if (!loggedUser) window.location.href = '/login.html';
+
+        document.getElementById('ui-username').innerText = loggedUser.username;
+        document.getElementById('ui-role').innerText = loggedUser.role;
+
+        // Pokaż zakładkę "Zarządzanie Ekipą" tylko dla Ownera(5) i Zarządu(4)
+        if (loggedUser.level >= 4) {
+            document.getElementById('menu-staff').style.display = 'flex';
+            loadStaffData(); // Ładujemy listę adminów
         }
 
-        // 2. FUNKCJA WYLOGOWANIA
         function logout() {
-            localStorage.removeItem('omni_token');
+            localStorage.removeItem('omni_user');
             window.location.href = '/login.html';
         }
 
-        // 3. OBSŁUGA ZAKŁADEK MENU
-        const navItems = document.querySelectorAll('.nav-item[data-target]');
-        const views = document.querySelectorAll('.view-section');
-
-        navItems.forEach(item => {
+        // --- NAWIGACJA ZAKŁADEK ---
+        document.querySelectorAll('.nav-item[data-target]').forEach(item => {
             item.addEventListener('click', function() {
-                // Usuń klasę active ze wszystkich przycisków i dodaj do klikniętego
-                navItems.forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
                 this.classList.add('active');
-
-                // Ukryj wszystkie widoki
-                views.forEach(view => {
+                document.querySelectorAll('.view-section').forEach(view => {
                     view.classList.remove('active');
-                    // Małe opóźnienie dla płynnej animacji (ustawione w CSS)
-                    setTimeout(() => view.style.display = 'none', 50);
+                    view.style.display = 'none';
                 });
-
-                // Pokaż odpowiedni widok
-                const targetId = this.getAttribute('data-target');
-                setTimeout(() => {
-                    const targetView = document.getElementById(targetId);
-                    targetView.style.display = 'block';
-                    // Wymuszamy reflow dla animacji CSS
-                    void targetView.offsetWidth; 
-                    targetView.classList.add('active');
-                }, 50);
+                const targetView = document.getElementById(this.getAttribute('data-target'));
+                targetView.style.display = 'block';
+                void targetView.offsetWidth; 
+                targetView.classList.add('active');
+                
+                // Odśwież dane zależnie od zakładki
+                if(this.getAttribute('data-target') === 'bans-view') loadBans();
+                if(this.getAttribute('data-target') === 'staff-view') loadStaffData();
             });
         });
 
-        // KOD POBIERANIA DANYCH Z POPRZEDNIEJ WIADOMOŚCI
-        async function fetchSystemData() {
+        // --- LOGIKA POBIERANIA DANYCH ---
+        async function fetchDashboard() {
             try {
-                const response = await fetch('/api/check'); 
-                const data = await response.json();
-                if(data.status === "success") {
-                    document.getElementById('val-players').innerText = data.data.playersOnline.toLocaleString();
-                    document.getElementById('val-revenue').innerText = data.data.revenue;
-                    document.getElementById('val-tps').innerText = data.data.tps;
-                }
-            } catch (error) {}
+                const res = await fetch('/api/dashboard');
+                const data = await res.json();
+                document.getElementById('val-online').innerText = data.online.toLocaleString();
+                document.getElementById('val-visits').innerText = data.weeklyVisits.toLocaleString();
+                document.getElementById('val-bans').innerText = data.totalBans;
+            } catch(e) {}
         }
 
+        // Ładowanie listy adminów
+        async function loadStaffData() {
+            const res = await fetch('/api/staff');
+            const staffList = await res.json();
+            const tbody = document.getElementById('staff-table-body');
+            tbody.innerHTML = '';
+
+            staffList.forEach(staff => {
+                // Generowanie przycisków akcji tylko dla rang niższych niż zalogowany użytkownik
+                let actionButtons = '-';
+                if (loggedUser.level > staff.level) {
+                    actionButtons = `
+                        <button class="action-btn orange" onclick="staffAction('force_reset', ${staff.id})">Wymuś Reset Zmianę</button>
+                        <button class="action-btn red" onclick="staffAction('delete', ${staff.id})">Zwolnij (Usuń)</button>
+                    `;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${staff.id}</td>
+                        <td style="font-weight: bold;">${staff.username}</td>
+                        <td>${staff.role}</td>
+                        <td style="color: ${staff.force_reset ? 'var(--danger)' : 'var(--success)'}">
+                            ${staff.force_reset ? 'Oczekuje na reset' : 'OK'}
+                        </td>
+                        <td>${actionButtons}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Akcje na koncie podwładnego (Reset / Usunięcie)
+        async function staffAction(action, targetId) {
+            if(!confirm("Czy na pewno chcesz wykonać tę akcję?")) return;
+            
+            const res = await fetch('/api/staff/action', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                // Wysyłamy poziom zalogowanego usera jako dodatkowe zabezpieczenie
+                body: JSON.stringify({ action: action, targetId: targetId, requesterLevel: loggedUser.level })
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadStaffData(); // Odśwież listę
+        }
+
+        // Ładowanie feedu banów
+        async function loadBans() {
+            const res = await fetch('/api/bans');
+            const bans = await res.json();
+            const tbody = document.getElementById('bans-table-body');
+            tbody.innerHTML = bans.length === 0 ? '<tr><td colspan="5">Brak historii banów.</td></tr>' : '';
+
+            bans.forEach(ban => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color: var(--text-muted)">${new Date(ban.date).toLocaleString()}</td>
+                        <td style="color: var(--accent-blue)">${ban.admin_name}</td>
+                        <td style="font-weight: bold; color: white;">${ban.target_name}</td>
+                        <td>${ban.reason}</td>
+                        <td><span style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 3px 8px; border-radius: 5px;">${ban.duration}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Wykres
         function initChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
-            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)'); 
-            gradient.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', 'Teraz'],
+                    labels: ['Pon', 'Wto', 'Śro', 'Czw', 'Pią', 'Sob', 'Nie'],
                     datasets: [{
-                        label: 'Gracze Online', data: [800, 950, 1100, 1050, 1300, 1500, 1642],
-                        borderColor: '#8b5cf6', backgroundColor: gradient, borderWidth: 2, tension: 0.4, fill: true,
-                        pointBackgroundColor: '#09090b', pointBorderColor: '#8b5cf6', pointBorderWidth: 2
+                        label: 'Wejścia graczy', data: [4200, 3900, 4500, 5100, 7200, 8500, 8100],
+                        borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', borderWidth: 2, tension: 0.4, fill: true,
+                        pointBackgroundColor: '#09090b', pointBorderColor: '#8b5cf6'
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                    scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#a1a1aa' } }, x: { grid: { display: false }, ticks: { color: '#a1a1aa' } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }, x: { grid: { display: false } } } }
             });
         }
 
         window.onload = () => {
-            fetchSystemData();
+            fetchDashboard();
             initChart();
-            setInterval(fetchSystemData, 5000);
+            setInterval(fetchDashboard, 10000); // Odświeżanie statystyk co 10s
         };
     </script>
 </body>
