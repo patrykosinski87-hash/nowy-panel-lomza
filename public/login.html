@@ -11,9 +11,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { justify-content: center; align-items: center; }
-        .auth-box { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-light); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 15px 20px 30px rgba(0,0,0,0.6); }
+        .auth-box { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 15px 20px 30px rgba(0,0,0,0.6); }
         .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .tab { flex: 1; padding: 10px; cursor: pointer; color: var(--text-muted); transition: 0.3s; }
         .tab.active { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
@@ -27,6 +28,16 @@
         .form-section { display: none; }
         .form-section.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Specjalny przycisk instalacji (Domyślnie ukryty) */
+        #install-btn {
+            background: linear-gradient(180deg, var(--success), #14532d);
+            box-shadow: 0 6px 0 #052e16, 0 10px 20px rgba(0,0,0,0.6);
+            display: none; 
+            margin-top: 30px;
+            font-size: 16px;
+        }
+        #install-btn:active { box-shadow: 0 0 0 #052e16, 0 2px 5px rgba(0,0,0,0.6); }
     </style>
 </head>
 <body>
@@ -52,6 +63,11 @@
         </div>
 
         <p id="msg" class="msg"></p>
+
+        <!-- PRZYCISK POBIERANIA APLIKACJI -->
+        <button id="install-btn" class="login-btn">
+            <i class="fa-solid fa-download"></i> ZAINSTALUJ APLIKACJĘ OMNI-OS
+        </button>
     </div>
 
     <script>
@@ -73,11 +89,7 @@
         async function register() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    username: document.getElementById('r-user').value, 
-                    password: document.getElementById('r-pass').value, 
-                    roleCode: document.getElementById('r-code').value 
-                })
+                body: JSON.stringify({ username: document.getElementById('r-user').value, password: document.getElementById('r-pass').value, roleCode: document.getElementById('r-code').value })
             });
             const data = await res.json();
             showMessage(data.message, !data.success);
@@ -87,10 +99,7 @@
         async function login() {
             const res = await fetch('/api/auth/login', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    username: document.getElementById('l-user').value, 
-                    password: document.getElementById('l-pass').value 
-                })
+                body: JSON.stringify({ username: document.getElementById('l-user').value, password: document.getElementById('l-pass').value })
             });
             const data = await res.json();
             if (data.success) {
@@ -102,12 +111,36 @@
             }
         }
 
-        // --- SKRYPT APLIKACJI (PWA) ---
+        // ==========================================
+        // MAGIA POBIERANIA APLIKACJI (PWA)
+        // ==========================================
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js');
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); });
         }
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        // Przeglądarka wykryła, że to aplikacja i blokuje domyślne powiadomienie,
+        // zamiast tego my pokazujemy nasz wielki przycisk.
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block'; // Pokaż przycisk!
+        });
+
+        // Co się stanie, jak ktoś kliknie nasz przycisk
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('Użytkownik zainstalował aplikację');
+                    installBtn.style.display = 'none'; // Schowaj po zainstalowaniu
+                }
+                deferredPrompt = null;
+            }
+        });
     </script>
 </body>
 </html>
