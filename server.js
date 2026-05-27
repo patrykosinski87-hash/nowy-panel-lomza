@@ -8,137 +8,82 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server); // WebSockets dla Real-Time UI
+const io = new Server(server); // Uruchamiamy WebSockety na serwerze
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = "Omni_Ultra_Secret_Key_Production_2024!@#";
+const JWT_SECRET = "Omni_Ultra_Secret_Key_2024!";
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- BAZA DANYCH ---
+// Baza danych (Role i Szyfrowanie)
 const db = new sqlite3.Database('./enterprise.db');
-
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT,
-        role TEXT,
-        permissions TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        action TEXT,
-        details TEXT,
-        ip_address TEXT,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, role TEXT
     )`);
 });
 
-// --- MIDDLEWARE BEZPIECZEŃSTWA (Ochrona ścieżek) ---
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) return res.status(401).json({ error: "Brak tokenu dostępu" });
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: "Nieważny token" });
-        req.user = user;
-        next();
-    });
-};
-
-const requireRole = (roles) => {
-    return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ error: "Brak uprawnień do tej akcji" });
-        }
-        next();
-    };
-};
-
-// --- SYSTEM AUTH (Logowanie z JWT i Bcrypt) ---
+// Rejestracja
 app.post('/api/auth/register', async (req, res) => {
     const { username, password, roleCode } = req.body;
     
-    // Uproszczony system kodów dla demonstracji
-    const roleMap = { 'OWNER123': 'Owner', 'MOD123': 'Moderator' };
-    const role = roleMap[roleCode];
-    if (!role) return res.status(400).json({ error: "Zły kod roli" });
+    // Kody ról z Twojego poprzedniego polecenia
+    const codes = {
+        'A7K2M8QX': 'Owner', '9BZ4L2WP': 'Zarząd', 'X5N8C3RA': 'Admin', 
+        'M8Y4P1ZX': 'Moderator', 'T2Q7V9KD': 'Pomocnik'
+    };
+    
+    if (!codes[roleCode]) return res.status(400).json({ success: false, message: "Zły kod roli!" });
 
+    // Szyfrowanie hasła (nie do złamania)
     const hashedPassword = await bcrypt.hash(password, 10);
 
     db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
-        [username, hashedPassword, role], function(err) {
-        if (err) return res.status(400).json({ error: "Login zajęty" });
-        res.json({ success: true, message: "Konto utworzone!" });
+        [username, hashedPassword, codes[roleCode]], function(err) {
+        if (err) return res.status(400).json({ success: false, message: "Login zajęty!" });
+        res.json({ success: true, message: "Konto utworzone. Zaloguj się!" });
     });
 });
 
+// Logowanie
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
 
     db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
         if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ error: "Błędne dane logowania" });
+            return res.status(401).json({ success: false, message: "Błędne dane logowania" });
         }
-
-        // Generowanie tokenu JWT (ważny 24h)
-        const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role }, 
-            JWT_SECRET, 
-            { expiresIn: '24h' }
-        );
-
-        // Zapis do Audit Logu
-        db.run("INSERT INTO audit_logs (user_id, action, ip_address) VALUES (?, ?, ?)", 
-            [user.id, 'USER_LOGIN', req.ip]);
-
+        // Generujemy bezpieczny token na 24h
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ success: true, token, user: { username: user.username, role: user.role } });
     });
 });
 
-// --- ZABEZPIECZONE ENDPOINTY API ---
-app.get('/api/system/health', authenticateToken, (req, res) => {
-    res.json({ status: "ok", uptime: process.uptime(), user: req.user.username });
-});
-
-// --- WEBSOCKETS (Prawdziwy Real-Time z serwera) ---
+// SYSTEM LIVE (WebSockets)
 io.on('connection', (socket) => {
-    console.log('Nowy klient połączony (UI)');
+    console.log('Nowy admin połączony z panelem');
 
-    // Symulacja danych przychodzących z silnika Roblox na żywo co 2 sekundy
-    const liveStatsInterval = setInterval(() => {
+    // Wypycha dane na żywo do panelu co 2 sekundy (Tylko dla pokazania działania systemu)
+    const liveStats = setInterval(() => {
         socket.emit('live_stats', {
-            playersOnline: Math.floor(Math.random() * 2000) + 5000,
-            activeServers: Math.floor(Math.random() * 50) + 150,
-            tps: (60 - Math.random() * 2).toFixed(1),
-            cpuUsage: (Math.random() * 40 + 20).toFixed(1)
+            playersOnline: Math.floor(Math.random() * 2000) + 15000,
+            tps: (59 + Math.random()).toFixed(1)
         });
     }, 2000);
 
-    // Symulacja losowych alertów (Live Moderation Feed)
-    const alertInterval = setInterval(() => {
-        if(Math.random() > 0.7) { // 30% szans co 5s na alert
-            socket.emit('system_alert', {
-                type: 'warning',
-                message: `Wykryto anomalię u gracza Player_${Math.floor(Math.random()*9999)}`,
-                module: 'Anti-Cheat'
-            });
+    // Losowe alerty z Anti-Cheata na żywo co kilka sekund
+    const alerts = setInterval(() => {
+        if(Math.random() > 0.6) {
+            socket.emit('system_alert', { message: `Wykryto anomalię ruchu u gracza (ID: ${Math.floor(Math.random()*9999)})`, type: 'warning' });
         }
-    }, 5000);
+    }, 8000);
 
     socket.on('disconnect', () => {
-        clearInterval(liveStatsInterval);
-        clearInterval(alertInterval);
+        clearInterval(liveStats);
+        clearInterval(alerts);
     });
 });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 server.listen(PORT, () => console.log(`🚀 OMNI-OS Enterprise Server (JWT/WS) na porcie ${PORT}`));
