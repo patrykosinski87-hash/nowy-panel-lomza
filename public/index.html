@@ -2,29 +2,32 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>OMNI-OS | Roblox Admin Panel</title>
+    <title>OMNI-OS | Enterprise Admin Panel</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- MAGIA WEBSOCKETÓW: Ta linijka łączy panel z serwerem na żywo -->
+    <script src="/socket.io/socket.io.js"></script>
+
     <style>
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Tabela dla staffu i banów */
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .data-table th { color: var(--text-muted); font-size: 12px; text-transform: uppercase; }
-        .action-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px;}
-        .action-btn.red { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .action-btn.orange { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        /* STYLE DLA POWIADOMIEŃ TOAST (Nie potrzebujesz dodatkowych plików CSS/JS) */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); color: white; padding: 15px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; }
+        .toast.show { transform: translateX(0); }
+        .toast-warning { border-left: 4px solid #f59e0b; }
+        .toast-error { border-left: 4px solid #ef4444; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
-        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS v6</div>
+        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS Enterprise</div>
         
         <div style="margin-bottom: 30px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
             <div style="font-size: 12px; color: var(--text-muted)">Zalogowano jako:</div>
@@ -33,92 +36,75 @@
         </div>
 
         <ul class="nav-menu">
-            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-            <li class="nav-item" data-target="bans-view"><i class="fa-solid fa-gavel"></i> Dziennik Banów</li>
-            <!-- Ta opcja będzie widoczna tylko dla Zarządu i Ownera (Level 4 i 5) -->
-            <li class="nav-item" id="menu-staff" data-target="staff-view" style="display: none;"><i class="fa-solid fa-user-tie"></i> Zarządzanie Ekipą</li>
+            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard Live</li>
+            <li class="nav-item" data-target="wip-view"><i class="fa-solid fa-users"></i> Baza Graczy</li>
+            <li class="nav-item" data-target="wip-view"><i class="fa-solid fa-shield-halved"></i> Anti-Cheat Panel</li>
             <li class="nav-item" onclick="logout()"><i class="fa-solid fa-power-off" style="color: var(--danger)"></i> Wyloguj</li>
         </ul>
     </aside>
 
     <main class="main-content">
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD (Real-Time) -->
         <div id="dashboard-view" class="view-section active">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+                <h2 style="color: white;">Live Telemetry</h2>
+                <div style="color: var(--success); font-size: 14px; display: flex; align-items: center; gap: 10px;">
+                    <span class="pulse-status"></span> Socket Connected
+                </div>
+            </div>
+
             <div class="grid-stats">
                 <div class="stat-card">
-                    <div class="stat-title">Gracze Online</div>
-                    <div class="stat-value" id="val-online">...</div>
+                    <div class="stat-title">Gracze Online (Live)</div>
+                    <!-- Te wartości będą się zmieniać na żywo bez odświeżania! -->
+                    <div class="stat-value" id="val-online">Łączenie...</div> 
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">Wejścia (7 Dni)</div>
-                    <div class="stat-value" id="val-visits">...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">Nałożone Bany</div>
-                    <div class="stat-value" id="val-bans" style="color: var(--danger)">...</div>
+                    <div class="stat-title">Network TPS</div>
+                    <div class="stat-value" id="val-tps">...</div>
                 </div>
             </div>
-            <div class="chart-container">
-                <canvas id="activityChart"></canvas>
+
+            <div class="chart-container" style="display: flex; gap: 20px;">
+                <div style="flex: 2;">
+                    <h3 style="color: var(--text-muted); margin-bottom: 20px;">Wykres Aktywności</h3>
+                    <canvas id="activityChart"></canvas>
+                </div>
+                <!-- Mini okienko na Live Feed z powiadomień -->
+                <div style="flex: 1; border-left: 1px solid var(--border-color); padding-left: 20px;">
+                    <h3 style="color: var(--text-muted); margin-bottom: 20px;">System Alerts (Live)</h3>
+                    <div id="live-feed" style="overflow-y: auto; height: 300px; display: flex; flex-direction: column; gap: 10px;">
+                        <span style="color: var(--text-muted); font-size: 12px;">Nasłuchiwanie zdarzeń...</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- DZIENNIK BANÓW -->
-        <div id="bans-view" class="view-section">
-            <div class="chart-container" style="height: auto; min-height: 500px;">
-                <h3 style="color: var(--danger);">Live Feed - Logi Kar</h3>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th><th>Admin</th><th>Zbanowany Gracz</th><th>Powód</th><th>Czas trwania</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bans-table-body">
-                        <!-- Generowane przez JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ZARZĄDZANIE EKIPĄ (Tylko Owner / Zarząd) -->
-        <div id="staff-view" class="view-section">
-            <div class="chart-container" style="height: auto;">
-                <h3 style="color: var(--accent-purple);">Zarządzanie Administracją</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Możesz zarządzać kontami osób z rangą niższą od Twojej.</p>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th><th>Login</th><th>Ranga</th><th>Status Resetu</th><th>Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody id="staff-table-body">
-                        <!-- Generowane przez JS -->
-                    </tbody>
-                </table>
-            </div>
+        <div id="wip-view" class="view-section">
+            <h1 style="color: white; margin-top: 100px; text-align: center;">Wybierz moduł do wdrożenia!</h1>
         </div>
     </main>
 
+    <!-- KONTENER NA TOASTY -->
+    <div id="toast-container"></div>
+
     <script>
-        // --- WERYFIKACJA SESJI I ZARZĄDZANIE UI ---
-        const loggedUser = JSON.parse(localStorage.getItem('omni_user'));
-        if (!loggedUser) window.location.href = '/login.html';
+        // 1. Zabezpieczenie JWT
+        const token = localStorage.getItem('omni_jwt');
+        const user = JSON.parse(localStorage.getItem('omni_user'));
+        if (!token || !user) window.location.href = '/login.html';
 
-        document.getElementById('ui-username').innerText = loggedUser.username;
-        document.getElementById('ui-role').innerText = loggedUser.role;
-
-        // Pokaż zakładkę "Zarządzanie Ekipą" tylko dla Ownera(5) i Zarządu(4)
-        if (loggedUser.level >= 4) {
-            document.getElementById('menu-staff').style.display = 'flex';
-            loadStaffData(); // Ładujemy listę adminów
-        }
+        document.getElementById('ui-username').innerText = user.username;
+        document.getElementById('ui-role').innerText = user.role;
 
         function logout() {
+            localStorage.removeItem('omni_jwt');
             localStorage.removeItem('omni_user');
             window.location.href = '/login.html';
         }
 
-        // --- NAWIGACJA ZAKŁADEK ---
+        // 2. Przełączanie kart (Zakładki)
         document.querySelectorAll('.nav-item[data-target]').forEach(item => {
             item.addEventListener('click', function() {
                 document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -131,110 +117,76 @@
                 targetView.style.display = 'block';
                 void targetView.offsetWidth; 
                 targetView.classList.add('active');
-                
-                // Odśwież dane zależnie od zakładki
-                if(this.getAttribute('data-target') === 'bans-view') loadBans();
-                if(this.getAttribute('data-target') === 'staff-view') loadStaffData();
             });
         });
 
-        // --- LOGIKA POBIERANIA DANYCH ---
-        async function fetchDashboard() {
-            try {
-                const res = await fetch('/api/dashboard');
-                const data = await res.json();
-                document.getElementById('val-online').innerText = data.online.toLocaleString();
-                document.getElementById('val-visits').innerText = data.weeklyVisits.toLocaleString();
-                document.getElementById('val-bans').innerText = data.totalBans;
-            } catch(e) {}
-        }
-
-        // Ładowanie listy adminów
-        async function loadStaffData() {
-            const res = await fetch('/api/staff');
-            const staffList = await res.json();
-            const tbody = document.getElementById('staff-table-body');
-            tbody.innerHTML = '';
-
-            staffList.forEach(staff => {
-                // Generowanie przycisków akcji tylko dla rang niższych niż zalogowany użytkownik
-                let actionButtons = '-';
-                if (loggedUser.level > staff.level) {
-                    actionButtons = `
-                        <button class="action-btn orange" onclick="staffAction('force_reset', ${staff.id})">Wymuś Reset Zmianę</button>
-                        <button class="action-btn red" onclick="staffAction('delete', ${staff.id})">Zwolnij (Usuń)</button>
-                    `;
-                }
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${staff.id}</td>
-                        <td style="font-weight: bold;">${staff.username}</td>
-                        <td>${staff.role}</td>
-                        <td style="color: ${staff.force_reset ? 'var(--danger)' : 'var(--success)'}">
-                            ${staff.force_reset ? 'Oczekuje na reset' : 'OK'}
-                        </td>
-                        <td>${actionButtons}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Akcje na koncie podwładnego (Reset / Usunięcie)
-        async function staffAction(action, targetId) {
-            if(!confirm("Czy na pewno chcesz wykonać tę akcję?")) return;
+        // 3. System Powiadomień (Toast)
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
+            container.appendChild(toast);
             
-            const res = await fetch('/api/staff/action', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                // Wysyłamy poziom zalogowanego usera jako dodatkowe zabezpieczenie
-                body: JSON.stringify({ action: action, targetId: targetId, requesterLevel: loggedUser.level })
-            });
-            const data = await res.json();
-            alert(data.message);
-            loadStaffData(); // Odśwież listę
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
         }
 
-        // Ładowanie feedu banów
-        async function loadBans() {
-            const res = await fetch('/api/bans');
-            const bans = await res.json();
-            const tbody = document.getElementById('bans-table-body');
-            tbody.innerHTML = bans.length === 0 ? '<tr><td colspan="5">Brak historii banów.</td></tr>' : '';
-
-            bans.forEach(ban => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="color: var(--text-muted)">${new Date(ban.date).toLocaleString()}</td>
-                        <td style="color: var(--accent-blue)">${ban.admin_name}</td>
-                        <td style="font-weight: bold; color: white;">${ban.target_name}</td>
-                        <td>${ban.reason}</td>
-                        <td><span style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 3px 8px; border-radius: 5px;">${ban.duration}</span></td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Wykres
+        // 4. Inicjalizacja Wykresu Chart.js
+        let myChart;
         function initChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
-            new Chart(ctx, {
+            myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Pon', 'Wto', 'Śro', 'Czw', 'Pią', 'Sob', 'Nie'],
+                    labels: ['', '', '', '', '', '', 'Teraz'],
                     datasets: [{
-                        label: 'Wejścia graczy', data: [4200, 3900, 4500, 5100, 7200, 8500, 8100],
-                        borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', borderWidth: 2, tension: 0.4, fill: true,
-                        pointBackgroundColor: '#09090b', pointBorderColor: '#8b5cf6'
+                        label: 'Gracze Online',
+                        data: [15000, 15000, 15000, 15000, 15000, 15000, 15000], // Startowe dane
+                        borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }, x: { grid: { display: false } } } }
+                options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }, x: { grid: { display: false } } } }
             });
         }
 
+        // 5. POŁĄCZENIE WEBSOCKET (REAL-TIME!)
+        // To łączy się bezpośrednio z serwerem i czeka na zdarzenia
+        const socket = io();
+
+        socket.on('live_stats', (data) => {
+            // Natychmiastowa aktualizacja liczb
+            document.getElementById('val-online').innerText = data.playersOnline.toLocaleString();
+            document.getElementById('val-tps').innerText = data.tps;
+
+            // Płynna aktualizacja wykresu na żywo!
+            if (myChart) {
+                myChart.data.datasets[0].data.shift(); // Usuwa najstarszy punkt
+                myChart.data.datasets[0].data.push(data.playersOnline); // Dodaje nowy
+                myChart.update();
+            }
+        });
+
+        socket.on('system_alert', (alert) => {
+            // Pokaż popup w rogu ekranu
+            showToast(alert.message, alert.type);
+
+            // Dodaj log do okienka Live Feed
+            const feed = document.getElementById('live-feed');
+            const time = new Date().toLocaleTimeString();
+            feed.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); padding: 10px; border-radius: 4px; font-size: 13px; color: white;">
+                    <span style="color: var(--text-muted); font-size: 11px;">${time}</span><br>
+                    ${alert.message}
+                </div>
+            ` + feed.innerHTML; // Wstawiamy na samą górę
+        });
+
         window.onload = () => {
-            fetchDashboard();
             initChart();
-            setInterval(fetchDashboard, 10000); // Odświeżanie statystyk co 10s
         };
     </script>
 </body>
