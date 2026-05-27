@@ -1,0 +1,112 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;800&family=Syne:wght@700;800&display=swap');
+
+:root {
+    --bg: #07090e;
+    --glass: rgba(18, 22, 33, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.4);
+    --danger: #ef4444;
+    --success: #10b981;
+    --text: #f8fafc;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+/* TŁO ANIMOWANE */
+.bg-gradient {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 80% 20%, #1e1b4b 0%, transparent 40%),
+                radial-gradient(circle at 10% 80%, #0f172a 0%, transparent 40%);
+    z-index: -1;
+}
+
+/* --- LOGOWANIE (NAPRAWA BŁĘDU) --- */
+.auth-body {
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; width: 100%;
+}
+
+.auth-card {
+    width: 100%; max-width: 420px; padding: 50px;
+    background: var(--glass); backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border); border-radius: 35px;
+    text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    animation: fadeIn 0.8s ease;
+}
+
+.auth-card h1 { font-family: 'Syne', sans-serif; font-size: 32px; color: var(--accent); margin-bottom: 10px; }
+.auth-card p { color: #64748b; font-size: 11px; letter-spacing: 2px; font-weight: 800; margin-bottom: 35px; }
+
+input, select {
+    width: 100%; padding: 16px 20px; background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border); border-radius: 16px;
+    color: white; outline: none; margin-bottom: 15px; transition: 0.3s;
+}
+input:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(99, 102, 241, 0.1); }
+
+.btn-primary {
+    width: 100%; padding: 16px; background: var(--accent);
+    border: none; border-radius: 16px; color: white; font-weight: 800;
+    cursor: pointer; box-shadow: 0 10px 20px var(--accent-glow); transition: 0.3s;
+}
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 30px var(--accent-glow); }
+
+/* --- PANEL GŁÓWNY --- */
+.app-container { display: flex; height: 100vh; padding: 25px; gap: 25px; }
+
+.sidebar {
+    width: 280px; background: var(--glass); backdrop-filter: blur(20px);
+    border-radius: 30px; border: 1px solid var(--glass-border);
+    display: flex; flex-direction: column; padding: 35px 20px;
+}
+
+.nav-item {
+    padding: 16px 20px; border-radius: 18px; cursor: pointer; color: #94a3b8;
+    display: flex; align-items: center; gap: 15px; transition: 0.3s;
+    margin-bottom: 8px; font-weight: 600;
+}
+.nav-item:hover, .nav-item.active { background: var(--accent); color: white; }
+
+.sidebar-footer {
+    margin-top: auto; padding: 20px; background: rgba(0,0,0,0.2);
+    border-radius: 20px; border: 1px solid var(--glass-border);
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.main-content { flex: 1; overflow-y: auto; padding-right: 10px; }
+
+.bento-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+.card {
+    background: var(--glass); backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); border-radius: 30px;
+    padding: 30px; transition: 0.4s;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+.header-card { grid-column: span 3; display: flex; justify-content: space-between; align-items: center; }
+.header-card h2 { font-family: 'Syne'; font-size: 28px; }
+
+.stat-val { font-family: 'Syne'; font-size: 42px; color: var(--accent); display: block; margin-top: 10px; }
+
+/* TABELE */
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { text-align: left; color: #64748b; font-size: 11px; font-weight: 800; padding: 15px; border-bottom: 1px solid var(--glass-border); }
+td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 14px; }
+
+.badge { padding: 5px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; }
+.online { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.banned { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+.btn-action { padding: 8px 15px; border: none; border-radius: 10px; font-weight: 800; font-size: 11px; cursor: pointer; transition: 0.2s; margin-right: 5px; }
+.btn-kick { background: #f59e0b; color: white; }
+.btn-ban { background: var(--danger); color: white; }
+.btn-action:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Fix Chrome Autofill */
+input:-webkit-autofill { -webkit-box-shadow: 0 0 0 50px #111421 inset !important; -webkit-text-fill-color: white !important; }

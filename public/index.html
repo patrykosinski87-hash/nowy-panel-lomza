@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Łomża txElite | Elite Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo" style="font-family:'Syne'; font-size:20px; color:var(--accent); text-align:center; margin-bottom:40px;">
+                LOMZA <span style="font-weight:300">TX</span>
+            </div>
+            <nav style="flex:1">
+                <div class="nav-item active" onclick="tab('dash', this)"><i class="fas fa-grid-2"></i> Dashboard</div>
+                <div class="nav-item" onclick="tab('players', this)"><i class="fas fa-users"></i> Gracze</div>
+                <div class="nav-item" onclick="tab('staff', this)"><i class="fas fa-user-shield"></i> Kadra</div>
+                <div class="nav-item" onclick="tab('logs', this)"><i class="fas fa-list-ul"></i> Logi</div>
+            </nav>
+            <div class="sidebar-footer">
+                <div><b id="me-name">---</b><br><small id="me-role" style="color:var(--accent)">Ranga</small></div>
+                <i class="fas fa-power-off" onclick="logout()" style="color:var(--danger); cursor:pointer;"></i>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- TAB: DASHBOARD -->
+            <section id="tab-dash" class="tab-page active">
+                <div class="bento-grid">
+                    <div class="card header-card">
+                        <div>
+                            <h2 id="hello-txt">Witaj w systemie</h2>
+                            <p style="color:#64748b; margin-top:5px;">Wszystkie systemy monitorowania są aktywne.</p>
+                        </div>
+                        <div style="text-align:right">
+                            <span class="badge online">SERWER ONLINE</span>
+                        </div>
+                    </div>
+                    <div class="card"><p style="font-size:11px; font-weight:800; opacity:0.5;">OBYWATELE</p><span class="stat-val" id="stat-players">0</span></div>
+                    <div class="card"><p style="font-size:11px; font-weight:800; opacity:0.5;">ADMINISTRACJA</p><span class="stat-val" id="stat-staff" style="color:#c084fc">0</span></div>
+                    <div class="card" style="grid-column: span 3; height: 350px;"><canvas id="mainChart"></canvas></div>
+                </div>
+            </section>
+
+            <!-- TAB: PLAYERS -->
+            <section id="tab-players" class="tab-page" style="display:none">
+                <div class="card">
+                    <h2>ZARZĄDZANIE GRACZAMI</h2>
+                    <table>
+                        <thead><tr><th>ID</th><th>NICK</th><th>PORTFEL</th><th>STATUS</th><th>AKCJE</th></tr></thead>
+                        <tbody id="player-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB: STAFF -->
+            <section id="tab-staff" class="tab-page" style="display:none">
+                <div class="card">
+                    <h2>ZESPÓŁ ADMINISTRACYJNY</h2>
+                    <table>
+                        <thead><tr><th>ID</th><th>NICK</th><th>RANGA</th><th>AKCJE</th></tr></thead>
+                        <tbody id="staff-list"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        async function check() {
+            const r = await fetch('/api/check'); const d = await r.json();
+            if(!d.loggedIn) window.location.href = 'login.html';
+            document.getElementById('me-name').innerText = d.user.name;
+            document.getElementById('me-role').innerText = d.user.role;
+            document.getElementById('hello-txt').innerText = "Witaj, " + d.user.name;
+            loadData();
+        }
+        check();
+
+        function tab(id, el) {
+            document.querySelectorAll('.tab-page').forEach(p => p.style.display = 'none');
+            document.getElementById('tab-'+id).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        async function loadData() {
+            const r = await fetch('/api/data'); const d = await r.json();
+            document.getElementById('stat-players').innerText = d.players.length;
+            document.getElementById('stat-staff').innerText = d.staff.length;
+            
+            document.getElementById('player-list').innerHTML = d.players.map(p => `
+                <tr>
+                    <td>#${p.id}</td><td><b>${p.name}</b></td><td style="color:var(--success)">$${p.money}</td>
+                    <td><span class="badge ${p.status.toLowerCase()}">${p.status}</span></td>
+                    <td>
+                        <button class="btn-action btn-kick" onclick="action('KICK', ${p.id}, '${p.name}')">KICK</button>
+                        <button class="btn-action btn-ban" onclick="action('BAN', ${p.id}, '${p.name}')">BAN</button>
+                    </td>
+                </tr>`).join('');
+
+            document.getElementById('staff-list').innerHTML = d.staff.map(s => `
+                <tr>
+                    <td>${s.id}</td><td><b>${s.username}</b></td><td style="color:var(--accent)">${s.role}</td>
+                    <td><button onclick="delStaff(${s.id})" style="color:var(--danger); background:none; border:none; cursor:pointer;">USUŃ</button></td>
+                </tr>`).join('');
+        }
+
+        async function action(type, id, name) {
+            const reason = prompt(`Powód dla ${type} (${name}):`);
+            if(!reason) return;
+            await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:type, id, name, reason}) });
+            loadData();
+        }
+
+        async function delStaff(id) {
+            if(!confirm("Usunąć tego administratora?")) return;
+            const res = await fetch('/api/staff/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
+            const data = await res.json();
+            if(data.error) alert(data.error); else loadData();
+        }
+
+        async function logout() { await fetch('/api/logout', {method:'POST'}); window.location.href='login.html'; }
+
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        new Chart(ctx, { type:'line', data:{ labels:['12:00','15:00','18:00','21:00','00:00'], datasets:[{ label:'Gracze Online', data:[20, 55, 120, 90, 30], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)' }] }, options: { responsive:true, maintainAspectRatio:false } });
+    </script>
+</body>
+</html>
