@@ -1,71 +1,49 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Łomża txElite | Elite Dashboard</title>
+    <title>Lomza RP | Elite Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="bg-gradient"></div>
+    <div class="bg-glow"></div>
     <div class="app-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="logo" style="font-family:'Syne'; font-size:20px; color:var(--accent); text-align:center; margin-bottom:40px;">
-                LOMZA <span style="font-weight:300">TX</span>
-            </div>
+            <h2 style="font-family:'Syne'; color:var(--accent); text-align:center; margin-bottom:30px;">LOMZA TX</h2>
             <nav style="flex:1">
-                <div class="nav-item active" onclick="tab('dash', this)"><i class="fas fa-grid-2"></i> Dashboard</div>
+                <div class="nav-item active" onclick="tab('dash', this)"><i class="fas fa-home"></i> Dashboard</div>
                 <div class="nav-item" onclick="tab('players', this)"><i class="fas fa-users"></i> Gracze</div>
-                <div class="nav-item" onclick="tab('staff', this)"><i class="fas fa-user-shield"></i> Kadra</div>
-                <div class="nav-item" onclick="tab('logs', this)"><i class="fas fa-list-ul"></i> Logi</div>
+                <div class="nav-item" onclick="tab('staff', this)"><i class="fas fa-shield"></i> Kadra</div>
             </nav>
-            <div class="sidebar-footer">
-                <div><b id="me-name">---</b><br><small id="me-role" style="color:var(--accent)">Ranga</small></div>
+            <div style="padding:15px; background:rgba(0,0,0,0.2); border-radius:20px; border:1px solid var(--glass-border); display:flex; justify-content:space-between; align-items:center;">
+                <span id="me-name" style="font-weight:800; font-size:13px;">...</span>
                 <i class="fas fa-power-off" onclick="logout()" style="color:var(--danger); cursor:pointer;"></i>
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- TAB: DASHBOARD -->
-            <section id="tab-dash" class="tab-page active">
-                <div class="bento-grid">
-                    <div class="card header-card">
-                        <div>
-                            <h2 id="hello-txt">Witaj w systemie</h2>
-                            <p style="color:#64748b; margin-top:5px;">Wszystkie systemy monitorowania są aktywne.</p>
-                        </div>
-                        <div style="text-align:right">
-                            <span class="badge online">SERWER ONLINE</span>
-                        </div>
-                    </div>
-                    <div class="card"><p style="font-size:11px; font-weight:800; opacity:0.5;">OBYWATELE</p><span class="stat-val" id="stat-players">0</span></div>
-                    <div class="card"><p style="font-size:11px; font-weight:800; opacity:0.5;">ADMINISTRACJA</p><span class="stat-val" id="stat-staff" style="color:#c084fc">0</span></div>
-                    <div class="card" style="grid-column: span 3; height: 350px;"><canvas id="mainChart"></canvas></div>
+            <header class="bento-card header-card">
+                <div><h1 id="hello-txt" style="font-family:'Syne';">System Online</h1><p style="color:#64748b">Zarządzaj serwerem w czasie rzeczywistym.</p></div>
+                <div style="text-align:right"><div id="clock" style="font-family:'Syne'; font-size:24px">00:00</div><small style="color:var(--accent); font-weight:800">LOMZA, PL</small></div>
+            </header>
+
+            <section id="tab-dash" class="tab-page" style="display:contents">
+                <div class="bento-card stat-card"><p style="font-size:10px; font-weight:800; opacity:0.5">OBYWATELE</p><span class="stat-val" id="stat-p">0</span></div>
+                <div class="bento-card stat-card"><p style="font-size:10px; font-weight:800; opacity:0.5">KADRA</p><span class="stat-val" id="stat-s" style="color:#c084fc">0</span></div>
+                <div class="bento-card stat-card" style="grid-column: span 2"><p style="font-size:10px; font-weight:800; opacity:0.5">STATUS</p><span class="stat-val" style="color:var(--success)">LIVE</span></div>
+                <div class="bento-card chart-card"><canvas id="mainChart"></canvas></div>
+                <div class="bento-card log-card">
+                    <h3 style="font-size:12px; margin-bottom:15px; opacity:0.5">LOGI AKCJI</h3>
+                    <div id="log-list" style="font-size:11px; overflow-y:auto"></div>
                 </div>
             </section>
 
-            <!-- TAB: PLAYERS -->
-            <section id="tab-players" class="tab-page" style="display:none">
-                <div class="card">
+            <section id="tab-players" class="tab-page" style="display:none; grid-column: span 4">
+                <div class="bento-card">
                     <h2>ZARZĄDZANIE GRACZAMI</h2>
-                    <table>
-                        <thead><tr><th>ID</th><th>NICK</th><th>PORTFEL</th><th>STATUS</th><th>AKCJE</th></tr></thead>
-                        <tbody id="player-list"></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- TAB: STAFF -->
-            <section id="tab-staff" class="tab-page" style="display:none">
-                <div class="card">
-                    <h2>ZESPÓŁ ADMINISTRACYJNY</h2>
-                    <table>
-                        <thead><tr><th>ID</th><th>NICK</th><th>RANGA</th><th>AKCJE</th></tr></thead>
-                        <tbody id="staff-list"></tbody>
-                    </table>
+                    <table style="width:100%"><tbody id="p-list"></tbody></table>
                 </div>
             </section>
         </main>
@@ -76,7 +54,6 @@
             const r = await fetch('/api/check'); const d = await r.json();
             if(!d.loggedIn) window.location.href = 'login.html';
             document.getElementById('me-name').innerText = d.user.name;
-            document.getElementById('me-role').innerText = d.user.role;
             document.getElementById('hello-txt').innerText = "Witaj, " + d.user.name;
             loadData();
         }
@@ -84,51 +61,31 @@
 
         function tab(id, el) {
             document.querySelectorAll('.tab-page').forEach(p => p.style.display = 'none');
-            document.getElementById('tab-'+id).style.display = 'block';
+            document.getElementById('tab-'+id).style.display = (id === 'dash' ? 'contents' : 'block');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             el.classList.add('active');
         }
 
         async function loadData() {
             const r = await fetch('/api/data'); const d = await r.json();
-            document.getElementById('stat-players').innerText = d.players.length;
-            document.getElementById('stat-staff').innerText = d.staff.length;
-            
-            document.getElementById('player-list').innerHTML = d.players.map(p => `
-                <tr>
-                    <td>#${p.id}</td><td><b>${p.name}</b></td><td style="color:var(--success)">$${p.money}</td>
-                    <td><span class="badge ${p.status.toLowerCase()}">${p.status}</span></td>
-                    <td>
-                        <button class="btn-action btn-kick" onclick="action('KICK', ${p.id}, '${p.name}')">KICK</button>
-                        <button class="btn-action btn-ban" onclick="action('BAN', ${p.id}, '${p.name}')">BAN</button>
-                    </td>
-                </tr>`).join('');
-
-            document.getElementById('staff-list').innerHTML = d.staff.map(s => `
-                <tr>
-                    <td>${s.id}</td><td><b>${s.username}</b></td><td style="color:var(--accent)">${s.role}</td>
-                    <td><button onclick="delStaff(${s.id})" style="color:var(--danger); background:none; border:none; cursor:pointer;">USUŃ</button></td>
-                </tr>`).join('');
+            document.getElementById('stat-p').innerText = d.players.length;
+            document.getElementById('stat-s').innerText = d.staff.length;
+            document.getElementById('p-list').innerHTML = d.players.map(p => `<tr><td>#${p.id}</td><td><b>${p.name}</b></td><td>$${p.money}</td><td><button onclick="action('BAN', ${p.id}, '${p.name}')" style="background:var(--danger); border:none; color:white; padding:5px 10px; border-radius:8px; cursor:pointer;">BAN</button></td></tr>`).join('');
+            document.getElementById('log-list').innerHTML = d.logs.map(l => `<div style="margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;"><b>${l.admin}</b>: ${l.action} <br><small style="opacity:0.5">${l.target}</small></div>`).join('');
         }
 
         async function action(type, id, name) {
-            const reason = prompt(`Powód dla ${type} (${name}):`);
-            if(!reason) return;
+            const reason = prompt("Podaj powód:"); if(!reason) return;
             await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:type, id, name, reason}) });
             loadData();
         }
 
-        async function delStaff(id) {
-            if(!confirm("Usunąć tego administratora?")) return;
-            const res = await fetch('/api/staff/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
-            const data = await res.json();
-            if(data.error) alert(data.error); else loadData();
-        }
+        function updateClock() { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+        setInterval(updateClock, 1000); updateClock();
 
         async function logout() { await fetch('/api/logout', {method:'POST'}); window.location.href='login.html'; }
 
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        new Chart(ctx, { type:'line', data:{ labels:['12:00','15:00','18:00','21:00','00:00'], datasets:[{ label:'Gracze Online', data:[20, 55, 120, 90, 30], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)' }] }, options: { responsive:true, maintainAspectRatio:false } });
+        new Chart(document.getElementById('mainChart').getContext('2d'), { type:'line', data:{ labels:['12:00','16:00','20:00','00:00'], datasets:[{ label:'Gracze', data:[30, 95, 130, 40], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)' }] }, options: { responsive:true, maintainAspectRatio:false } });
     </script>
 </body>
 </html>
