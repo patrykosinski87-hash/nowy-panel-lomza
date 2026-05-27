@@ -18,32 +18,26 @@ app.use(express.static(__dirname));
 const db = new sqlite3.Database('./database.db');
 
 db.serialize(() => {
-    // Tworzenie tabel (jeśli nie istnieją)
     db.run(`CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, role TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, name TEXT, money INTEGER, level INTEGER, status TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, admin TEXT, action TEXT, target TEXT, time DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-    
-    // Tabela akcji oczekujących (Z DODATKOWYMI KOLUMNAMI)
-    db.run(`CREATE TABLE IF NOT EXISTS pending_actions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        target_id INTEGER, 
-        action TEXT, 
-        reason TEXT, 
-        duration TEXT, 
-        extra_data TEXT
-    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS pending_actions (id INTEGER PRIMARY KEY AUTOINCREMENT, target_id INTEGER, action TEXT, reason TEXT, duration TEXT, extra_data TEXT)`);
+});
+
+// --- ROUTE DLA STRONY GŁÓWNEJ (NAPRAWA BŁĘDU CANNOT GET /) ---
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
 });
 
 const protect = (req, res, next) => {
     const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: 'Zaloguj się' });
+    if (!token) return res.status(401).json({ error: 'Auth Required' });
     try {
         req.user = jwt.verify(token, SECRET);
         next();
-    } catch (e) { res.status(401).json({ error: 'Sesja wygasła' }); }
+    } catch (e) { res.status(401).json({ error: 'Session Expired' }); }
 };
 
-// --- API ---
 app.get('/api/check', (req, res) => {
     const token = req.cookies.token;
     if (!token) return res.json({ loggedIn: false });
@@ -66,7 +60,6 @@ app.get('/api/data', protect, (req, res) => {
 app.post('/api/announcement', protect, (req, res) => {
     const { message } = req.body;
     db.run("INSERT INTO pending_actions (action, extra_data) VALUES (?, ?)", ['ANNOUNCEMENT', message], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
         db.run("INSERT INTO logs (admin, action, target) VALUES (?, ?, ?)", [req.user.name, 'OGŁOSZENIE', 'Wszyscy']);
         res.json({ success: true });
     });
@@ -75,7 +68,6 @@ app.post('/api/announcement', protect, (req, res) => {
 app.post('/api/action', protect, (req, res) => {
     const { action, id, name, reason, duration } = req.body;
     db.run("INSERT INTO pending_actions (target_id, action, reason, duration) VALUES (?, ?, ?, ?)", [id, action, reason, duration || 'perm'], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
         db.run("INSERT INTO logs (admin, action, target) VALUES (?, ?, ?)", [req.user.name, action, `${name} (${reason})`]);
         res.json({ success: true });
     });
@@ -84,15 +76,11 @@ app.post('/api/action', protect, (req, res) => {
 app.post('/api/roblox/sync', (req, res) => {
     const { key, playerList } = req.body;
     if (key !== ROBLOX_KEY) return res.status(403).send("Forbidden");
-
     db.run("DELETE FROM players", () => {
         const stmt = db.prepare("INSERT INTO players (id, name, money, level, status) VALUES (?, ?, ?, ?, 'Online')");
-        if (playerList) {
-            playerList.forEach(p => stmt.run(p.userId, p.name, p.money, p.level));
-        }
+        if (playerList) { playerList.forEach(p => stmt.run(p.userId, p.name, p.money, p.level)); }
         stmt.finalize();
     });
-
     db.all("SELECT * FROM pending_actions", (err, rows) => {
         res.json({ actions: rows || [] });
         db.run("DELETE FROM pending_actions");
@@ -106,7 +94,7 @@ app.post('/api/register', async (req, res) => {
     db.get("SELECT COUNT(*) as count FROM staff", (err, row) => {
         const role = (row && row.count === 0) ? 'Owner' : 'Moderator';
         db.run("INSERT INTO staff (username, password, role) VALUES (?, ?, ?)", [username, hash, role], (err) => {
-            if (err) return res.status(400).json({ error: 'User exists' });
+            if (err) return res.status(400).json({ error: 'Admin istnieje' });
             res.json({ success: true });
         });
     });
@@ -127,4 +115,4 @@ app.post('/api/logout', (req, res) => {
     res.json({ success: true });
 });
 
-app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
