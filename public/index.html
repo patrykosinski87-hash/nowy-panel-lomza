@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Łomża Roleplay</title>
+    <title>OMNI-OS | Enterprise Admin</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,15 +27,15 @@
 <body>
 
     <aside class="sidebar">
-        <div class="brand"><i class="fa-solid fa-cube"></i> Łomża Roleplay</div>
+        <div class="brand"><i class="fa-solid fa-cube"></i> OMNI-OS Enterprise</div>
         <div style="margin-bottom: 30px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid var(--border-color);">
             <div style="font-size: 12px; color: var(--text-muted)">Zalogowano jako:</div>
             <div id="ui-username" style="font-weight: bold; color: white; margin-top: 3px;">...</div>
             <div id="ui-role" style="font-size: 12px; color: var(--accent-purple); font-weight: 600;">...</div>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Panel</li>
-            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze w grze</li>
+            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
+            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze In-Game</li>
             <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery Control</li>
             <li class="nav-item" data-target="banlist-view"><i class="fa-solid fa-gavel"></i> Lista Banów</li>
             <li class="nav-item" id="menu-staff" data-target="staff-view" style="display: none;"><i class="fa-solid fa-user-shield"></i> Zarządzanie Zespołem</li>
@@ -52,7 +52,7 @@
 
         <div id="players-view" class="view-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-                <h2 style="color: white;">Gracze w grze</h2>
+                <h2 style="color: white;">Gracze In-Game (Na żywo)</h2>
                 <button onclick="loadLiveData()" class="action-btn" style="background: var(--accent-blue);"><i class="fa-solid fa-rotate-right"></i> Odśwież Listę</button>
             </div>
             <div class="chart-container"><table class="data-table"><thead><tr><th>ID Robloxa</th><th>Username</th><th>Akcje</th></tr></thead><tbody id="players-table-body"></tbody></table></div>
@@ -70,8 +70,11 @@
         </div>
 
         <div id="banlist-view" class="view-section">
-            <h2 style="color: white; margin-bottom: 30px;">Zarządzanie Karami (Aktywne Bany)</h2>
-            <div class="chart-container"><table class="data-table"><thead><tr><th>Gracz</th><th>Powód</th><th>Czas</th><th>Nałożone przez</th><th>Akcja</th></tr></thead><tbody id="bans-table-body"></tbody></table></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+                <h2 style="color: white;">Zarządzanie Karami (Aktywne Bany)</h2>
+                <button onclick="openPunishModal('')" class="action-btn" style="background: var(--danger);"><i class="fa-solid fa-gavel"></i> Zbanuj Ręcznie (ID/Nick)</button>
+            </div>
+            <div class="chart-container"><table class="data-table"><thead><tr><th>Gracz (ID)</th><th>Powód</th><th>Czas</th><th>Nałożone przez</th><th>Akcja</th></tr></thead><tbody id="bans-table-body"></tbody></table></div>
         </div>
 
         <div id="staff-view" class="view-section">
@@ -80,17 +83,37 @@
         </div>
     </main>
 
-    <!-- MODAL KAR -->
+    <!-- ZAAWANSOWANY MODAL KAR -->
     <div id="punish-modal" class="modal-overlay">
         <div class="modal">
-            <h2 style="color: white; margin-bottom: 5px;">Wymierz Karę</h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Cel: <strong id="modal-target-name" style="color:var(--accent-blue);">...</strong></p>
+            <h2 style="color: white; margin-bottom: 25px;">Wymierz Karę</h2>
+            
+            <label style="color: var(--text-muted); font-size: 12px;">Cel (ID lub Nick gracza z Robloxa)</label>
+            <input type="text" id="modal-target-input" class="modal-input" placeholder="Wpisz tutaj Nick lub ID..." autocomplete="off">
+            
             <label style="color: var(--text-muted); font-size: 12px;">Typ Kary</label>
-            <select id="modal-type" class="modal-select" onchange="toggleDurationField()"><option value="KICK_PLAYER">Kick (Wyrzucenie z gry)</option><option value="BAN_PLAYER">Ban (Blokada wejścia)</option></select>
-            <div id="duration-container" style="display: none;"><label style="color: var(--text-muted); font-size: 12px;">Długość Bana</label><select id="modal-duration" class="modal-select"><option value="1 Dzień">1 Dzień</option><option value="7 Dni">7 Dni</option><option value="30 Dni">30 Dni</option><option value="Permanentny" style="color: var(--danger); font-weight: bold;">PERMANENTNY</option></select></div>
+            <select id="modal-type" class="modal-select" onchange="toggleDurationField()">
+                <option value="KICK_PLAYER">Kick (Wyrzucenie z gry)</option>
+                <option value="BAN_PLAYER">Ban (Blokada wejścia)</option>
+            </select>
+            
+            <div id="duration-container" style="display: none;">
+                <label style="color: var(--text-muted); font-size: 12px;">Długość Bana</label>
+                <select id="modal-duration-type" class="modal-select" onchange="toggleCustomDuration()">
+                    <option value="Permanentny" style="color: var(--danger); font-weight: bold;">PERMANENTNY (Na zawsze)</option>
+                    <option value="Custom">Inne (Wpisz ilość dni)</option>
+                </select>
+                <!-- Ukryte pole na wpisanie własnej liczby dni -->
+                <input type="number" id="modal-custom-duration" class="modal-input" placeholder="Wpisz liczbę dni, np. 14" style="display: none; margin-top: -10px;" min="1">
+            </div>
+            
             <label style="color: var(--text-muted); font-size: 12px;">Powód</label>
             <input type="text" id="modal-reason" class="modal-input" placeholder="Napisz powód kary...">
-            <div style="display: flex; gap: 10px; justify-content: flex-end;"><button onclick="closePunishModal()" class="action-btn" style="background: transparent; border: 1px solid var(--border-color);">Anuluj</button><button onclick="executePunishment()" class="action-btn" style="background: var(--danger); color: white;"><i class="fa-solid fa-gavel"></i> Ukaraj</button></div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closePunishModal()" class="action-btn" style="background: transparent; border: 1px solid var(--border-color);">Anuluj</button>
+                <button onclick="executePunishment()" class="action-btn" style="background: var(--danger); color: white;"><i class="fa-solid fa-gavel"></i> Ukaraj</button>
+            </div>
         </div>
     </div>
     <div id="toast-container"></div>
@@ -101,6 +124,7 @@
         document.getElementById('ui-username').innerText = user.username; document.getElementById('ui-role').innerText = user.role;
         if(user.level >= 4) document.getElementById('menu-staff').style.display = 'flex';
         function logout() { localStorage.clear(); window.location.href = '/login.html'; }
+        
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container'); const toast = document.createElement('div');
             toast.className = `toast toast-${type}`; toast.style.borderLeft = `4px solid ${type==='error'?'#ef4444':type==='success'?'#22c55e':'#3b82f6'}`;
@@ -129,10 +153,15 @@
         async function loadBans() {
             const res = await fetch('/api/bans', { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json();
             const tbody = document.getElementById('bans-table-body'); tbody.innerHTML = '';
-            data.data.forEach(b => { tbody.innerHTML += `<tr><td style="font-weight:bold; color:white;">${b.username}</td><td>${b.reason}</td><td style="color:var(--danger)">${b.duration}</td><td style="color:var(--accent-blue)">${b.admin}</td><td><button onclick="unbanPlayer('${b.username}')" class="action-btn" style="background: rgba(34, 197, 94, 0.2); color: var(--success); padding: 5px 15px;">UNBAN</button></td></tr>`; });
+            data.data.forEach(b => { tbody.innerHTML += `<tr><td style="font-weight:bold; color:white;">${b.username} <span style="color:var(--text-muted); font-weight:normal;">(${b.roblox_id})</span></td><td>${b.reason}</td><td style="color:var(--danger)">${b.duration}</td><td style="color:var(--accent-blue)">${b.admin}</td><td><button onclick="unbanPlayer('${b.username}', '${b.roblox_id}')" class="action-btn" style="background: rgba(34, 197, 94, 0.2); color: var(--success); padding: 5px 15px;">UNBAN</button></td></tr>`; });
             if(data.data.length === 0) tbody.innerHTML = "<tr><td colspan='5'>Brak zbanowanych graczy.</td></tr>";
         }
-        async function unbanPlayer(username) { if(!confirm(`Odbanować ${username}?`)) return; const res = await fetch('/api/bans/unban', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ username }) }); if(res.ok) { showToast(`${username} odbanowany.`, "success"); loadBans(); } }
+        
+        async function unbanPlayer(username, robloxId) { 
+            if(!confirm(`Odbanować ${username}?`)) return; 
+            const res = await fetch('/api/bans/unban', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ username: username, robloxId: robloxId }) }); 
+            if(res.ok) { showToast(`${username} odbanowany.`, "success"); loadBans(); } 
+        }
 
         async function loadStaff() {
             const res = await fetch('/api/staff', { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json();
@@ -145,6 +174,7 @@
                 tbody.innerHTML += `<tr><td>#${s.id}</td><td style="font-weight:bold;">${s.username}</td><td style="color: var(--accent-purple);">${s.role}</td><td style="display:flex; gap:5px;">${btns}</td></tr>`;
             });
         }
+        
         async function staffAction(id, action) {
             let payload = null;
             if(action === 'delete') { if(!confirm("Usunąć?")) return; } else if(action === 'promote') { if(!confirm("Awansować?")) return; } else if(action === 'demote') { if(!confirm("Zdegradować?")) return; } else if(action === 'reset_username') { payload = prompt("Nowy login:"); if(!payload) return; } else if(action === 'reset_password') { payload = prompt("Nowe hasło:"); if(!payload) return; }
@@ -152,16 +182,75 @@
             const data = await res.json(); if(data.success) { showToast(data.message, "success"); loadStaff(); } else { showToast(data.message, "error"); }
         }
 
-        let currentPunishTarget = "";
-        function openPunishModal(playerName) { currentPunishTarget = playerName; document.getElementById('modal-target-name').innerText = playerName; document.getElementById('punish-modal').style.display = "flex"; }
-        function closePunishModal() { document.getElementById('punish-modal').style.display = "none"; }
-        function toggleDurationField() { document.getElementById('duration-container').style.display = document.getElementById('modal-type').value === 'BAN_PLAYER' ? 'block' : 'none'; }
-        async function executePunishment() {
-            const type = document.getElementById('modal-type').value; const reason = document.getElementById('modal-reason').value; const duration = document.getElementById('modal-duration').value;
-            if(!reason) return alert("Podaj powód!");
-            await fetch('/api/servers/action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type, target: currentPunishTarget, reason, duration: type === 'BAN_PLAYER' ? duration : "N/A" }) });
-            showToast(`Ukarano ${currentPunishTarget}.`, "success"); closePunishModal(); loadLiveData();
+        // --- OBSŁUGA MODALA KAR ---
+        function openPunishModal(playerName) { 
+            const targetInput = document.getElementById('modal-target-input');
+            targetInput.value = playerName;
+            if (playerName) { targetInput.readOnly = true; targetInput.style.opacity = "0.5"; } 
+            else { targetInput.readOnly = false; targetInput.style.opacity = "1"; }
+            
+            // Resetowanie pól modala za każdym otwarciem
+            document.getElementById('modal-reason').value = "";
+            document.getElementById('modal-duration-type').value = "Permanentny";
+            document.getElementById('modal-custom-duration').value = "";
+            document.getElementById('modal-custom-duration').style.display = "none";
+            document.getElementById('duration-container').style.display = document.getElementById('modal-type').value === 'BAN_PLAYER' ? 'block' : 'none';
+
+            document.getElementById('punish-modal').style.display = "flex"; 
         }
+        
+        function closePunishModal() { document.getElementById('punish-modal').style.display = "none"; }
+        
+        function toggleDurationField() { 
+            document.getElementById('duration-container').style.display = document.getElementById('modal-type').value === 'BAN_PLAYER' ? 'block' : 'none'; 
+        }
+        
+        function toggleCustomDuration() {
+            const durType = document.getElementById('modal-duration-type').value;
+            if(durType === 'Custom') document.getElementById('modal-custom-duration').style.display = 'block';
+            else document.getElementById('modal-custom-duration').style.display = 'none';
+        }
+
+        async function executePunishment() {
+            const target = document.getElementById('modal-target-input').value;
+            const type = document.getElementById('modal-type').value; 
+            const reason = document.getElementById('modal-reason').value; 
+            
+            if(!target) return alert("Musisz podać cel (ID lub Nick)!");
+            if(!reason) return alert("Podaj powód!");
+
+            // Kalkulacja customowej ilości dni
+            let finalDuration = "N/A";
+            if(type === 'BAN_PLAYER') {
+                const durType = document.getElementById('modal-duration-type').value;
+                if (durType === 'Permanentny') {
+                    finalDuration = "Permanentny";
+                } else {
+                    const daysNum = document.getElementById('modal-custom-duration').value;
+                    if(!daysNum || daysNum <= 0) return alert("Podaj poprawną liczbę dni (większą od 0)!");
+                    if(daysNum == 1) finalDuration = "1 Dzień";
+                    else finalDuration = `${daysNum} Dni`;
+                }
+            }
+            
+            showToast("Łączenie z API Robloxa...", "info");
+            const res = await fetch('/api/servers/action', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                body: JSON.stringify({ type, target: target, reason, duration: finalDuration }) 
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                showToast(`Akcja wykonana! Wysłano komendę do gry.`, "success"); 
+                closePunishModal(); 
+                loadLiveData(); 
+                if(document.getElementById('banlist-view').classList.contains('active')) loadBans();
+            } else {
+                showToast(data.message, "error");
+            }
+        }
+
         async function sendServerAction(type) {
             let payload = type === 'BROADCAST' ? prompt("Treść ogłoszenia:") : null; if(type === 'BROADCAST' && !payload) return;
             if(type === 'SHUTDOWN' && !confirm("Wyłączyć serwery?")) return;
