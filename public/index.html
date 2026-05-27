@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>OMNI-OS | Enterprise Admin</title>
+    <title>ŁOMŻA ROLEPLAY</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -40,8 +40,8 @@
         </div>
 
         <ul class="nav-menu">
-            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze In-Game</li>
+            <li class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-chart-line"></i> Panel</li>
+            <li class="nav-item" data-target="players-view"><i class="fa-solid fa-users"></i> Gracze w Grze</li>
             <li class="nav-item" data-target="servers-view"><i class="fa-solid fa-server"></i> Serwery Control</li>
             <li class="nav-item" data-target="banlist-view"><i class="fa-solid fa-gavel"></i> Lista Banów</li>
             <li class="nav-item" id="menu-staff" data-target="staff-view" style="display: none;"><i class="fa-solid fa-user-shield"></i> Zarządzanie Zespołem</li>
@@ -52,7 +52,7 @@
     <main class="main-content">
         <!-- DASHBOARD -->
         <div id="dashboard-view" class="view-section active">
-            <h2 style="color: white; margin-bottom: 30px;">Dokładna Telemetria Sieci</h2>
+            <h2 style="color: white; margin-bottom: 30px;">Dokładna Wykres</h2>
             <div class="grid-stats">
                 <div class="stat-card">
                     <div class="stat-title">Gracze w grze</div>
@@ -87,7 +87,7 @@
             </div>
             <div class="chart-container">
                 <table class="data-table">
-                    <thead><tr><th>Job ID (Serwer)</th><th>Ilość Graczy</th><th>Ping</th></tr></thead>
+                    <thead><tr><th>ID Serwera</th><th>Ilość Graczy</th><th>Ping</th></tr></thead>
                     <tbody id="servers-table-body"></tbody>
                 </table>
             </div>
@@ -132,7 +132,19 @@
                 <label style="color: var(--text-muted); font-size: 12px;">Długość Bana</label>
                 <select id="modal-duration" class="modal-select">
                     <option value="1 Dzień">1 Dzień</option>
+                     <option value="7 Dni">2 Dni</option>
+                     <option value="7 Dni">3 Dni</option>
+                     <option value="7 Dni">4 Dni</option>
+                     <option value="7 Dni">5 Dni</option>
+                     <option value="7 Dni">6 Dni</option>
                     <option value="7 Dni">7 Dni</option>
+                     <option value="7 Dni">8 Dni</option>
+                     <option value="7 Dni">9 Dni</option>
+                     <option value="7 Dni">10 Dni</option>
+                     <option value="7 Dni">11 Dni</option>
+                     <option value="7 Dni">12 Dni</option>
+                     <option value="7 Dni">13 Dni</option>
+                     <option value="7 Dni">14 Dni</option>
                     <option value="30 Dni">30 Dni</option>
                     <option value="Permanentny" style="color: var(--danger); font-weight: bold;">PERMANENTNY</option>
                 </select>
